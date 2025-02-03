@@ -102,6 +102,48 @@ const UserRewards = () => {
     },
   });
 
+  const markAsReceived = useMutation({
+    mutationFn: async (reward: any) => {
+      if (reward.type === 'battle_pass') {
+        // Update user_rewards status
+        const { error } = await supabase
+          .from('user_rewards')
+          .update({ received: true })
+          .eq('id', reward.id)
+          .eq('user_id', user?.id);
+
+        if (error) throw error;
+      } else if (reward.type === 'shop') {
+        // Update user_purchases status
+        const { error } = await supabase
+          .from('user_purchases')
+          .update({ received: true })
+          .eq('id', reward.id)
+          .eq('user_id', user?.id);
+
+        if (error) throw error;
+      }
+      
+      await logAction('reward_received', `Получена награда: ${reward.name}`);
+      return reward;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userRewardsDetails', user?.id] });
+      toast({
+        title: "Успех!",
+        description: "Статус награды обновлен",
+      });
+    },
+    onError: (error) => {
+      console.error('Mark as received error:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить статус награды",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDelete = (reward: any) => {
     if (reward.type === 'shop') {
       deletePurchase.mutate(reward.id);
@@ -180,8 +222,9 @@ const UserRewards = () => {
                           variant="outline"
                           className="bg-colizeum-cyan/10 hover:bg-colizeum-cyan/20 border-colizeum-cyan/20"
                           onClick={() => markAsReceived.mutate(reward)}
+                          disabled={reward.received}
                         >
-                          Получил
+                          {reward.received ? 'Получено' : 'Получить'}
                         </Button>
                       </div>
                     </div>
