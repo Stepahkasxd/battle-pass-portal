@@ -164,6 +164,7 @@ const Pay = () => {
                   setSelectedCrypto={setSelectedCrypto}
                   walletAddress={walletAddress}
                   setWalletAddress={setWalletAddress}
+                  amount={calculateTotalWithFee()}
                 />
               </TabsContent>
             </Tabs>
