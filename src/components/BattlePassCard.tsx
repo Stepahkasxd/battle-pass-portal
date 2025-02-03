@@ -22,7 +22,7 @@ export const BattlePassCard = ({ level, currentXP, requiredXP, isPremium }: Batt
           <div>
             <h3 className="text-xl font-bold text-white">Battle Pass Level {level}</h3>
             <p className="text-sm text-gray-400">
-              {isPremium ? "Premium Pass Active" : "Free Pass"}
+              {isPremium ? "Премиум Пропуск Активен" : "Бесплатный Пропуск"}
             </p>
           </div>
         </div>
@@ -30,7 +30,7 @@ export const BattlePassCard = ({ level, currentXP, requiredXP, isPremium }: Batt
       
       <div className="space-y-2">
         <div className="flex justify-between text-sm text-gray-400">
-          <span>Progress to Next Level</span>
+          <span>Прогресс до следующего уровня</span>
           <span>{currentXP}/{requiredXP} XP</span>
         </div>
         <Progress value={progress} className="h-2 bg-colizeum-dark" />

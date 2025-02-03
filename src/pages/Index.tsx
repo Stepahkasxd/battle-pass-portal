@@ -11,12 +11,12 @@ const Index = () => {
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="text-center space-y-4">
             <h1 className="text-4xl font-bold">
-              Welcome to{" "}
+              Добро пожаловать в{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-colizeum-red to-colizeum-cyan">
                 Colizeum Battle Pass
               </span>
             </h1>
-            <p className="text-gray-400">Complete missions, earn rewards, level up your gaming experience</p>
+            <p className="text-gray-400">Выполняйте миссии, получайте награды, повышайте уровень</p>
           </div>
           
           <BattlePassCard
@@ -31,7 +31,7 @@ const Index = () => {
               size="lg"
               className="w-full bg-gradient-to-r from-colizeum-red to-colizeum-cyan hover:opacity-90 transition-opacity"
             >
-              Upgrade to Premium
+              Улучшить до Премиум
             </Button>
             
             <Button
@@ -39,7 +39,7 @@ const Index = () => {
               variant="outline"
               className="w-full border-colizeum-cyan text-colizeum-cyan hover:bg-colizeum-cyan/10"
             >
-              View Missions
+              Посмотреть Миссии
             </Button>
           </div>
         </div>

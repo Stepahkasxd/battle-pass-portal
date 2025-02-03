@@ -14,21 +14,21 @@ export const Navbar = () => {
           <Link to="/battlepass">
             <Button variant="ghost" className="text-white hover:text-colizeum-cyan">
               <Trophy className="w-5 h-5 mr-2" />
-              Battle Pass
+              Боевой Пропуск
             </Button>
           </Link>
           
           <Link to="/shop">
             <Button variant="ghost" className="text-white hover:text-colizeum-cyan">
               <ShoppingCart className="w-5 h-5 mr-2" />
-              Shop
+              Магазин
             </Button>
           </Link>
           
           <Link to="/profile">
             <Button variant="ghost" className="text-white hover:text-colizeum-cyan">
               <User className="w-5 h-5 mr-2" />
-              Profile
+              Профиль
             </Button>
           </Link>
         </div>
