@@ -34,7 +34,15 @@ export type Database = {
           metadata?: Json | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "action_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       admin_users: {
         Row: {
@@ -221,6 +229,13 @@ export type Database = {
             columns: ["battle_pass_id"]
             isOneToOne: false
             referencedRelation: "battle_passes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_battle_passes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
