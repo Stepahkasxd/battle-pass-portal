@@ -65,6 +65,7 @@ export type Database = {
           description: string | null
           end_date: string
           id: string
+          is_premium: boolean | null
           name: string
           start_date: string
         }
@@ -73,6 +74,7 @@ export type Database = {
           description?: string | null
           end_date: string
           id?: string
+          is_premium?: boolean | null
           name: string
           start_date: string
         }
@@ -81,6 +83,7 @@ export type Database = {
           description?: string | null
           end_date?: string
           id?: string
+          is_premium?: boolean | null
           name?: string
           start_date?: string
         }
