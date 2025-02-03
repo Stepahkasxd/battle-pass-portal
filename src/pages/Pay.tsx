@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { CreditCard, Bitcoin } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,15 +9,20 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PremiumBenefits } from "@/components/payment/PremiumBenefits";
 import { CardPaymentForm } from "@/components/payment/CardPaymentForm";
 import { CryptoPaymentForm } from "@/components/payment/CryptoPaymentForm";
+import { PaymentHeader } from "@/components/payment/PaymentHeader";
+import { PaymentFooter } from "@/components/payment/PaymentFooter";
+import { PaymentActions } from "@/components/payment/PaymentActions";
 
 const BASE_PRICE = 499;
 const CRYPTO_FEE_PERCENTAGE = 5;
+const PAYMENT_VERIFICATION_TIMEOUT = 15000; // 15 seconds
 
 const Pay = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto'>('card');
   
   // Card payment state
@@ -37,6 +41,62 @@ const Pay = () => {
       return BASE_PRICE + fee;
     }
     return BASE_PRICE;
+  };
+
+  const handleVerifyPayment = async () => {
+    if (!user) {
+      toast({
+        title: "Необходима авторизация",
+        description: "Пожалуйста, войдите в систему для совершения оплаты",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+
+    setIsVerifying(true);
+
+    // Simulate payment verification
+    setTimeout(async () => {
+      try {
+        const { data: payment, error: paymentError } = await supabase
+          .from('payments')
+          .insert([{
+            user_id: user.id,
+            amount: calculateTotalWithFee(),
+            payment_method: selectedCrypto,
+            status: 'completed',
+            metadata: { walletAddress, cryptocurrency: selectedCrypto },
+          }])
+          .select()
+          .single();
+
+        if (paymentError) throw paymentError;
+
+        const { error: battlePassError } = await supabase
+          .from('user_battle_passes')
+          .update({ is_premium: true })
+          .eq('user_id', user.id);
+
+        if (battlePassError) throw battlePassError;
+
+        toast({
+          title: "Оплата подтверждена",
+          description: "Премиум статус активирован",
+        });
+
+        navigate("/");
+      } catch (error) {
+        console.error('Payment error:', error);
+        toast({
+          title: "Ошибка оплаты",
+          description: "Пожалуйста, попробуйте позже",
+          variant: "destructive",
+        });
+      } finally {
+        setIsVerifying(false);
+      }
+    }, PAYMENT_VERIFICATION_TIMEOUT);
   };
 
   const handlePayment = async () => {
@@ -105,14 +165,7 @@ const Pay = () => {
   return (
     <div className="min-h-screen bg-colizeum-dark text-white pt-24">
       <div className="container max-w-4xl mx-auto px-4">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-4">
-            Премиум Боевой Пропуск
-          </h1>
-          <p className="text-gray-400">
-            Разблокируйте все премиум награды и возможности
-          </p>
-        </div>
+        <PaymentHeader />
 
         <Card className="bg-colizeum-gray border-colizeum-cyan/20">
           <CardHeader>
@@ -165,39 +218,24 @@ const Pay = () => {
                   walletAddress={walletAddress}
                   setWalletAddress={setWalletAddress}
                   amount={calculateTotalWithFee()}
+                  onVerifyPayment={handleVerifyPayment}
+                  isVerifying={isVerifying}
                 />
               </TabsContent>
             </Tabs>
           </CardContent>
 
           <CardFooter className="flex flex-col gap-4">
-            <Button 
-              className="w-full bg-gradient-to-r from-colizeum-red to-colizeum-cyan hover:opacity-90 transition-opacity"
-              size="lg"
-              onClick={handlePayment}
-              disabled={isProcessing}
-            >
-              {isProcessing ? "Обработка..." : `Оплатить ${calculateTotalWithFee()} ₽`}
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full border-colizeum-cyan text-colizeum-cyan hover:bg-colizeum-cyan/10"
-              asChild
-            >
-              <Link to="/">
-                Вернуться назад
-              </Link>
-            </Button>
+            <PaymentActions 
+              isProcessing={isProcessing}
+              onPayment={handlePayment}
+              showPayButton={paymentMethod === 'card'}
+              amount={calculateTotalWithFee()}
+            />
           </CardFooter>
         </Card>
 
-        <div className="mt-8 text-center text-sm text-gray-400">
-          <p>
-            Оплата безопасно обрабатывается через защищенное соединение.
-            <br />
-            После оплаты доступ будет активирован автоматически.
-          </p>
-        </div>
+        <PaymentFooter />
       </div>
     </div>
   );

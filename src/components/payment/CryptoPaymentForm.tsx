@@ -24,6 +24,8 @@ interface CryptoPaymentFormProps {
   walletAddress: string;
   setWalletAddress: (value: string) => void;
   amount: number;
+  onVerifyPayment: () => void;
+  isVerifying: boolean;
 }
 
 export const CryptoPaymentForm = ({
@@ -32,6 +34,8 @@ export const CryptoPaymentForm = ({
   walletAddress,
   setWalletAddress,
   amount,
+  onVerifyPayment,
+  isVerifying,
 }: CryptoPaymentFormProps) => {
   const [showWalletAddress, setShowWalletAddress] = useState(false);
   const { toast } = useToast();
@@ -122,6 +126,16 @@ export const CryptoPaymentForm = ({
           onClick={() => setShowWalletAddress(true)}
         >
           Получить адрес для оплаты
+        </Button>
+      )}
+
+      {showWalletAddress && (
+        <Button
+          className="w-full"
+          onClick={onVerifyPayment}
+          disabled={isVerifying}
+        >
+          {isVerifying ? "Проверяем оплату..." : "Я оплатил"}
         </Button>
       )}
     </div>
