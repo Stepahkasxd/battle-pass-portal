@@ -5,9 +5,36 @@ import { Shield, Star, Zap, CreditCard, Bitcoin } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+
+const CRYPTOCURRENCIES = [
+  { id: 'BTC', name: 'Bitcoin', symbol: 'BTC' },
+  { id: 'ETH', name: 'Ethereum', symbol: 'ETH' },
+  { id: 'USDT', name: 'Tether', symbol: 'USDT' },
+  { id: 'BNB', name: 'Binance Coin', symbol: 'BNB' },
+  { id: 'SOL', name: 'Solana', symbol: 'SOL' },
+  { id: 'XRP', name: 'Ripple', symbol: 'XRP' },
+  { id: 'USDC', name: 'USD Coin', symbol: 'USDC' },
+  { id: 'ADA', name: 'Cardano', symbol: 'ADA' },
+  { id: 'AVAX', name: 'Avalanche', symbol: 'AVAX' },
+  { id: 'DOGE', name: 'Dogecoin', symbol: 'DOGE' },
+  { id: 'TRX', name: 'TRON', symbol: 'TRX' },
+  { id: 'DOT', name: 'Polkadot', symbol: 'DOT' },
+  { id: 'MATIC', name: 'Polygon', symbol: 'MATIC' },
+  { id: 'DAI', name: 'Dai', symbol: 'DAI' },
+  { id: 'LTC', name: 'Litecoin', symbol: 'LTC' },
+  { id: 'BCH', name: 'Bitcoin Cash', symbol: 'BCH' },
+  { id: 'LINK', name: 'Chainlink', symbol: 'LINK' },
+  { id: 'ATOM', name: 'Cosmos', symbol: 'ATOM' },
+  { id: 'UNI', name: 'Uniswap', symbol: 'UNI' },
+  { id: 'XLM', name: 'Stellar', symbol: 'XLM' },
+];
+
+const BASE_PRICE = 499;
+const CRYPTO_FEE_PERCENTAGE = 5;
 
 const Pay = () => {
   const { user } = useAuth();
@@ -23,7 +50,16 @@ const Pay = () => {
   const [cardName, setCardName] = useState("");
 
   // Crypto payment state
+  const [selectedCrypto, setSelectedCrypto] = useState<string>("");
   const [walletAddress, setWalletAddress] = useState("");
+
+  const calculateTotalWithFee = () => {
+    if (paymentMethod === 'crypto') {
+      const fee = (BASE_PRICE * CRYPTO_FEE_PERCENTAGE) / 100;
+      return BASE_PRICE + fee;
+    }
+    return BASE_PRICE;
+  };
 
   const handlePayment = async () => {
     if (!user) {
@@ -36,26 +72,33 @@ const Pay = () => {
       return;
     }
 
+    if (paymentMethod === 'crypto' && !selectedCrypto) {
+      toast({
+        title: "Выберите криптовалюту",
+        description: "Пожалуйста, выберите криптовалюту для оплаты",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
-      // Create payment record
       const { data: payment, error: paymentError } = await supabase
         .from('payments')
         .insert([{
           user_id: user.id,
-          amount: 499,
-          payment_method: paymentMethod,
+          amount: calculateTotalWithFee(),
+          payment_method: paymentMethod === 'card' ? 'card' : selectedCrypto,
           metadata: paymentMethod === 'card' 
             ? { cardName, lastFourDigits: cardNumber.slice(-4) }
-            : { walletAddress },
+            : { walletAddress, cryptocurrency: selectedCrypto },
         }])
         .select()
         .single();
 
       if (paymentError) throw paymentError;
 
-      // Update battle pass premium status
       const { error: battlePassError } = await supabase
         .from('user_battle_passes')
         .update({ is_premium: true })
@@ -97,7 +140,12 @@ const Pay = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>Премиум Доступ</span>
-              <span className="text-colizeum-cyan">499 ₽</span>
+              <span className="text-colizeum-cyan">
+                {calculateTotalWithFee()} ₽
+                {paymentMethod === 'crypto' && (
+                  <span className="text-sm text-gray-400 ml-2">(включая 5% комиссию)</span>
+                )}
+              </span>
             </CardTitle>
             <CardDescription className="text-gray-400">
               Единоразовая оплата за текущий сезон
@@ -164,12 +212,30 @@ const Pay = () => {
               </TabsContent>
 
               <TabsContent value="crypto" className="space-y-4 mt-4">
+                <Select value={selectedCrypto} onValueChange={setSelectedCrypto}>
+                  <SelectTrigger className="bg-colizeum-dark">
+                    <SelectValue placeholder="Выберите криптовалюту" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CRYPTOCURRENCIES.map((crypto) => (
+                      <SelectItem key={crypto.id} value={crypto.id}>
+                        <div className="flex items-center gap-2">
+                          <Bitcoin className="w-4 h-4" />
+                          {crypto.name} ({crypto.symbol})
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Input
                   placeholder="Адрес криптокошелька"
                   value={walletAddress}
                   onChange={(e) => setWalletAddress(e.target.value)}
                   className="bg-colizeum-dark"
                 />
+                <p className="text-sm text-gray-400">
+                  * Комиссия за оплату криптовалютой составляет 5%
+                </p>
               </TabsContent>
             </Tabs>
           </CardContent>
@@ -181,7 +247,7 @@ const Pay = () => {
               onClick={handlePayment}
               disabled={isProcessing}
             >
-              {isProcessing ? "Обработка..." : "Оплатить 499 ₽"}
+              {isProcessing ? "Обработка..." : `Оплатить ${calculateTotalWithFee()} ₽`}
             </Button>
             <Button 
               variant="outline" 
