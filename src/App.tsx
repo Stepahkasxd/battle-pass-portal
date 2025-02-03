@@ -10,9 +10,7 @@ import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import GuestDashboard from "./pages/GuestDashboard";
 import NotFound from "./pages/NotFound";
-import AdminLayout from "./pages/admin/Layout";
-import UsersPage from "./pages/admin/Users";
-import LogsPage from "./pages/admin/Logs";
+import AdminPanel from "./pages/AdminPanel";
 
 const queryClient = new QueryClient();
 
@@ -52,14 +50,10 @@ const App = () => (
               path="/admin"
               element={
                 <ProtectedRoute>
-                  <AdminLayout />
+                  <AdminPanel />
                 </ProtectedRoute>
               }
-            >
-              <Route index element={<Navigate to="/admin/users" replace />} />
-              <Route path="users" element={<UsersPage />} />
-              <Route path="logs" element={<LogsPage />} />
-            </Route>
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

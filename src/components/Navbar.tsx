@@ -1,10 +1,24 @@
 import { Button } from "@/components/ui/button";
-import { Trophy, User, ShoppingCart } from "lucide-react";
+import { Trophy, User, ShoppingCart, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Navbar = () => {
   const { user } = useAuth();
+
+  const { data: isAdmin } = useQuery({
+    queryKey: ['isAdmin'],
+    queryFn: async () => {
+      const { data: adminUser } = await supabase
+        .from('admin_users')
+        .select('id')
+        .single();
+      return !!adminUser;
+    },
+    enabled: !!user,
+  });
 
   return (
     <nav className="fixed top-0 w-full bg-colizeum-dark/95 backdrop-blur-sm border-b border-colizeum-gray z-50">
@@ -29,12 +43,22 @@ export const Navbar = () => {
           </Link>
           
           {user ? (
-            <Link to="/profile">
-              <Button variant="ghost" className="text-white hover:text-colizeum-cyan">
-                <User className="w-5 h-5 mr-2" />
-                Профиль
-              </Button>
-            </Link>
+            <>
+              <Link to="/profile">
+                <Button variant="ghost" className="text-white hover:text-colizeum-cyan">
+                  <User className="w-5 h-5 mr-2" />
+                  Профиль
+                </Button>
+              </Link>
+              {isAdmin && (
+                <Link to="/admin">
+                  <Button variant="ghost" className="text-white hover:text-colizeum-cyan">
+                    <Shield className="w-5 h-5 mr-2" />
+                    Админ
+                  </Button>
+                </Link>
+              )}
+            </>
           ) : (
             <Link to="/auth">
               <Button variant="ghost" className="text-white hover:text-colizeum-cyan">
