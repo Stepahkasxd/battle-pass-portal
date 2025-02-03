@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, Star, Zap, CreditCard, Bitcoin } from "lucide-react";
+import { Shield, Star, Zap, CreditCard, Bitcoin, Coins, Currency } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,26 +11,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 const CRYPTOCURRENCIES = [
-  { id: 'BTC', name: 'Bitcoin', symbol: 'BTC' },
-  { id: 'ETH', name: 'Ethereum', symbol: 'ETH' },
-  { id: 'USDT', name: 'Tether', symbol: 'USDT' },
-  { id: 'BNB', name: 'Binance Coin', symbol: 'BNB' },
-  { id: 'SOL', name: 'Solana', symbol: 'SOL' },
-  { id: 'XRP', name: 'Ripple', symbol: 'XRP' },
-  { id: 'USDC', name: 'USD Coin', symbol: 'USDC' },
-  { id: 'ADA', name: 'Cardano', symbol: 'ADA' },
-  { id: 'AVAX', name: 'Avalanche', symbol: 'AVAX' },
-  { id: 'DOGE', name: 'Dogecoin', symbol: 'DOGE' },
-  { id: 'TRX', name: 'TRON', symbol: 'TRX' },
-  { id: 'DOT', name: 'Polkadot', symbol: 'DOT' },
-  { id: 'MATIC', name: 'Polygon', symbol: 'MATIC' },
-  { id: 'DAI', name: 'Dai', symbol: 'DAI' },
-  { id: 'LTC', name: 'Litecoin', symbol: 'LTC' },
-  { id: 'BCH', name: 'Bitcoin Cash', symbol: 'BCH' },
-  { id: 'LINK', name: 'Chainlink', symbol: 'LINK' },
-  { id: 'ATOM', name: 'Cosmos', symbol: 'ATOM' },
-  { id: 'UNI', name: 'Uniswap', symbol: 'UNI' },
-  { id: 'XLM', name: 'Stellar', symbol: 'XLM' },
+  { id: 'BTC', name: 'Bitcoin', symbol: 'BTC', icon: Bitcoin },
+  { id: 'ETH', name: 'Ethereum', symbol: 'ETH', icon: Coins },
+  { id: 'USDT', name: 'Tether', symbol: 'USDT', icon: Currency },
+  { id: 'BNB', name: 'Binance Coin', symbol: 'BNB', icon: Coins },
+  { id: 'SOL', name: 'Solana', symbol: 'SOL', icon: Coins },
+  { id: 'XRP', name: 'Ripple', symbol: 'XRP', icon: Currency },
+  { id: 'USDC', name: 'USD Coin', symbol: 'USDC', icon: Currency },
+  { id: 'ADA', name: 'Cardano', symbol: 'ADA', icon: Coins },
+  { id: 'AVAX', name: 'Avalanche', symbol: 'AVAX', icon: Coins },
+  { id: 'DOGE', name: 'Dogecoin', symbol: 'DOGE', icon: Coins },
+  { id: 'TRX', name: 'TRON', symbol: 'TRX', icon: Coins },
+  { id: 'DOT', name: 'Polkadot', symbol: 'DOT', icon: Coins },
+  { id: 'MATIC', name: 'Polygon', symbol: 'MATIC', icon: Coins },
+  { id: 'DAI', name: 'Dai', symbol: 'DAI', icon: Currency },
+  { id: 'LTC', name: 'Litecoin', symbol: 'LTC', icon: Coins },
+  { id: 'BCH', name: 'Bitcoin Cash', symbol: 'BCH', icon: Bitcoin },
+  { id: 'LINK', name: 'Chainlink', symbol: 'LINK', icon: Coins },
+  { id: 'ATOM', name: 'Cosmos', symbol: 'ATOM', icon: Coins },
+  { id: 'UNI', name: 'Uniswap', symbol: 'UNI', icon: Currency },
+  { id: 'XLM', name: 'Stellar', symbol: 'XLM', icon: Coins },
 ];
 
 const BASE_PRICE = 499;
@@ -217,14 +217,17 @@ const Pay = () => {
                     <SelectValue placeholder="Выберите криптовалюту" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CRYPTOCURRENCIES.map((crypto) => (
-                      <SelectItem key={crypto.id} value={crypto.id}>
-                        <div className="flex items-center gap-2">
-                          <Bitcoin className="w-4 h-4" />
-                          {crypto.name} ({crypto.symbol})
-                        </div>
-                      </SelectItem>
-                    ))}
+                    {CRYPTOCURRENCIES.map((crypto) => {
+                      const IconComponent = crypto.icon;
+                      return (
+                        <SelectItem key={crypto.id} value={crypto.id}>
+                          <div className="flex items-center gap-2">
+                            <IconComponent className="w-4 h-4" />
+                            {crypto.name} ({crypto.symbol})
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
                 <Input
