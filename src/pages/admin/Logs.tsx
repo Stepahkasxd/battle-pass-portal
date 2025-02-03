@@ -10,7 +10,7 @@ const LogsPage = () => {
         .from('action_logs')
         .select(`
           *,
-          profiles:user_id (
+          profiles!action_logs_user_id_fkey (
             username
           )
         `)

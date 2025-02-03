@@ -38,7 +38,7 @@ const Profile = () => {
         .from("profiles")
         .select("username, avatar_url")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         toast({
@@ -57,7 +57,7 @@ const Profile = () => {
         .from("user_battle_passes")
         .select("current_level, current_xp, is_premium")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== "PGRST116") {
         toast({

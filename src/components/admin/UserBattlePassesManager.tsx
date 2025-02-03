@@ -48,11 +48,11 @@ export const UserBattlePassesManager = () => {
         .from('user_battle_passes')
         .select(`
           *,
-          profiles:user_id (
+          profiles!user_battle_passes_user_id_fkey (
             username,
             numeric_id
           ),
-          battle_passes:battle_pass_id (
+          battle_passes!user_battle_passes_battle_pass_id_fkey (
             name,
             description
           )
