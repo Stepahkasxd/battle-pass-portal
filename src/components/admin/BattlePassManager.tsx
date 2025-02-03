@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import { logAction } from "@/lib/logger";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NewReward {
   name: string;
@@ -28,6 +30,7 @@ interface NewBattlePass {
 
 export const BattlePassManager = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [newBattlePass, setNewBattlePass] = useState<NewBattlePass>({
     name: "",
     description: "",
@@ -107,6 +110,13 @@ export const BattlePassManager = () => {
       return;
     }
 
+    await logAction(
+      "battle_pass_delete",
+      `Удален боевой пропуск`,
+      { battle_pass_id: id },
+      user?.id
+    );
+
     toast({
       title: "Успешно",
       description: "Боевой пропуск удален",
@@ -146,23 +156,43 @@ export const BattlePassManager = () => {
       return;
     }
 
+    await logAction(
+      "battle_pass_create",
+      `Создан боевой пропуск: ${newBattlePass.name}`,
+      { battle_pass_id: battlePass.id },
+      user?.id
+    );
+
     // Create rewards for the battle pass
-    const { error: rewardsError } = await supabase
-      .from('rewards')
-      .insert(
-        newBattlePass.rewards.map(reward => ({
+    for (const reward of newBattlePass.rewards) {
+      const { error: rewardError, data: createdReward } = await supabase
+        .from('rewards')
+        .insert([{
           ...reward,
           battle_pass_id: battlePass.id,
-        }))
-      );
+        }])
+        .select()
+        .single();
 
-    if (rewardsError) {
-      toast({
-        title: "Ошибка",
-        description: "Не удалось создать награды",
-        variant: "destructive",
-      });
-      return;
+      if (rewardError) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось создать награды",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await logAction(
+        "reward_create",
+        `Создана награда: ${reward.name}`,
+        { 
+          reward_id: createdReward.id,
+          battle_pass_id: battlePass.id,
+          reward_name: reward.name
+        },
+        user?.id
+      );
     }
 
     toast({
