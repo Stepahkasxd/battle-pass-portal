@@ -18,19 +18,6 @@ const CRYPTOCURRENCIES = [
   { id: 'SOL', name: 'Solana', symbol: 'SOL', icon: Coins },
   { id: 'XRP', name: 'Ripple', symbol: 'XRP', icon: Currency },
   { id: 'USDC', name: 'USD Coin', symbol: 'USDC', icon: Currency },
-  { id: 'ADA', name: 'Cardano', symbol: 'ADA', icon: Coins },
-  { id: 'AVAX', name: 'Avalanche', symbol: 'AVAX', icon: Coins },
-  { id: 'DOGE', name: 'Dogecoin', symbol: 'DOGE', icon: Coins },
-  { id: 'TRX', name: 'TRON', symbol: 'TRX', icon: Coins },
-  { id: 'DOT', name: 'Polkadot', symbol: 'DOT', icon: Coins },
-  { id: 'MATIC', name: 'Polygon', symbol: 'MATIC', icon: Coins },
-  { id: 'DAI', name: 'Dai', symbol: 'DAI', icon: Currency },
-  { id: 'LTC', name: 'Litecoin', symbol: 'LTC', icon: Coins },
-  { id: 'BCH', name: 'Bitcoin Cash', symbol: 'BCH', icon: Bitcoin },
-  { id: 'LINK', name: 'Chainlink', symbol: 'LINK', icon: Coins },
-  { id: 'ATOM', name: 'Cosmos', symbol: 'ATOM', icon: Coins },
-  { id: 'UNI', name: 'Uniswap', symbol: 'UNI', icon: Currency },
-  { id: 'XLM', name: 'Stellar', symbol: 'XLM', icon: Coins },
 ];
 
 const BASE_PRICE = 499;
