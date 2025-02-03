@@ -8,6 +8,7 @@ import { Navbar } from "@/components/Navbar";
 import Index from "@/pages/Index";
 import Auth from "@/pages/Auth";
 import Shop from "@/pages/Shop";
+import Pay from "@/pages/Pay";
 import GuestDashboard from "@/pages/GuestDashboard";
 import UserRewards from "@/pages/UserRewards";
 import BattlePassDetails from "@/pages/BattlePassDetails";
@@ -27,6 +28,7 @@ const App = () => {
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/shop" element={<Shop />} />
+                <Route path="/pay" element={<Pay />} />
                 <Route
                   path="/dashboard"
                   element={
