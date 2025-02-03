@@ -60,6 +60,7 @@ const Shop = () => {
     }
 
     try {
+      // Создаем запись о покупке
       const { error: purchaseError } = await supabase
         .from('user_purchases')
         .insert({
@@ -70,6 +71,7 @@ const Shop = () => {
 
       if (purchaseError) throw purchaseError;
 
+      // Обновляем баланс пользователя
       const { error: pointsError } = await supabase
         .from('profiles')
         .update({ points: userProfile.points - item.price })
@@ -77,11 +79,21 @@ const Shop = () => {
 
       if (pointsError) throw pointsError;
 
+      // Создаем запись о награде
+      const { error: rewardError } = await supabase
+        .from('user_rewards')
+        .insert({
+          user_id: user.id,
+          reward_id: item.id,
+        });
+
+      if (rewardError) throw rewardError;
+
       await logAction('item_purchase', `Покупка товара: ${item.name}`);
 
       toast({
         title: "Успешная покупка!",
-        description: `Вы приобрели ${item.name}`,
+        description: `Вы приобрели ${item.name}. Проверьте вкладку "Мои Награды" для получения.`,
       });
 
     } catch (error) {

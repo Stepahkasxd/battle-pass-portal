@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Gift, Award } from "lucide-react";
+import { Gift, Award, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { logAction } from "@/lib/logger";
 
 const UserRewards = () => {
   const { user } = useAuth();
@@ -15,7 +16,8 @@ const UserRewards = () => {
   const { data: rewards, isLoading } = useQuery({
     queryKey: ['userRewardsDetails', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Получаем награды из боевого пропуска
+      const { data: rewardsData, error: rewardsError } = await supabase
         .from('user_rewards')
         .select(`
           *,
@@ -26,39 +28,76 @@ const UserRewards = () => {
             is_premium
           )
         `)
-        .eq('user_id', user?.id)
-        .order('claimed_at', { ascending: false });
+        .eq('user_id', user?.id);
 
-      if (error) {
-        console.error('Error fetching rewards:', error);
-        throw error;
-      }
-      return data;
+      if (rewardsError) throw rewardsError;
+
+      // Получаем покупки из магазина
+      const { data: purchasesData, error: purchasesError } = await supabase
+        .from('user_purchases')
+        .select(`
+          *,
+          shop_items (
+            name,
+            description,
+            image_url
+          )
+        `)
+        .eq('user_id', user?.id);
+
+      if (purchasesError) throw purchasesError;
+
+      // Объединяем данные
+      const allRewards = [
+        ...rewardsData.map((r: any) => ({
+          ...r,
+          type: 'battle_pass',
+          name: r.rewards?.name,
+          description: r.rewards?.description,
+        })),
+        ...purchasesData.map((p: any) => ({
+          id: p.id,
+          type: 'shop',
+          name: p.shop_items?.name,
+          description: p.shop_items?.description,
+          image_url: p.shop_items?.image_url,
+          claimed_at: p.purchased_at,
+        })),
+      ];
+
+      return allRewards;
     },
     enabled: !!user,
   });
 
   const markAsReceived = useMutation({
-    mutationFn: async (rewardId: string) => {
-      const { error } = await supabase
-        .from('user_rewards')
-        .delete()
-        .eq('id', rewardId)
-        .eq('user_id', user?.id);
+    mutationFn: async (reward: any) => {
+      if (reward.type === 'shop') {
+        // Для покупок из магазина
+        const { error } = await supabase
+          .from('user_purchases')
+          .delete()
+          .eq('id', reward.id)
+          .eq('user_id', user?.id);
 
-      if (error) {
-        console.error('Error deleting reward:', error);
-        throw error;
+        if (error) throw error;
+        
+        await logAction('reward_claimed', `Получена награда из магазина: ${reward.name}`);
+      } else {
+        // Для наград из боевого пропуска
+        const { error } = await supabase
+          .from('user_rewards')
+          .delete()
+          .eq('id', reward.id)
+          .eq('user_id', user?.id);
+
+        if (error) throw error;
+        
+        await logAction('reward_claimed', `Получена награда из боевого пропуска: ${reward.name}`);
       }
-      return rewardId;
+      return reward.id;
     },
     onSuccess: (rewardId) => {
-      // Оптимистично обновляем кэш, удаляя награду из списка
-      queryClient.setQueryData(['userRewardsDetails', user?.id], (oldData: any) => {
-        return oldData?.filter((reward: any) => reward.id !== rewardId);
-      });
-      
-      // Также инвалидируем кэш для обеспечения актуальности данных
       queryClient.invalidateQueries({ queryKey: ['userRewardsDetails', user?.id] });
       
       toast({
@@ -104,7 +143,7 @@ const UserRewards = () => {
         <ScrollArea className="h-[600px] rounded-md border border-colizeum-cyan/20 p-4">
           {rewards?.length ? (
             <div className="space-y-4">
-              {rewards.map((reward) => (
+              {rewards.map((reward: any) => (
                 <Card 
                   key={reward.id}
                   className="bg-colizeum-gray border-colizeum-cyan/20 hover:border-colizeum-cyan/40 transition-colors animate-fade-in"
@@ -113,21 +152,25 @@ const UserRewards = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="p-2 bg-colizeum-dark rounded-lg">
-                          <Award className="w-6 h-6 text-colizeum-cyan animate-pulse" />
+                          {reward.type === 'shop' ? (
+                            <ShoppingBag className="w-6 h-6 text-colizeum-cyan animate-pulse" />
+                          ) : (
+                            <Award className="w-6 h-6 text-colizeum-cyan animate-pulse" />
+                          )}
                         </div>
                         <div>
                           <CardTitle className="text-white text-lg">
-                            {reward.rewards?.name}
+                            {reward.name}
                           </CardTitle>
                           <p className="text-sm text-gray-400">
-                            {reward.rewards?.description}
+                            {reward.description}
                           </p>
                         </div>
                       </div>
                       <Button
                         variant="outline"
                         className="bg-colizeum-cyan/10 hover:bg-colizeum-cyan/20 border-colizeum-cyan/20"
-                        onClick={() => markAsReceived.mutate(reward.id)}
+                        onClick={() => markAsReceived.mutate(reward)}
                       >
                         Получил
                       </Button>
@@ -135,8 +178,12 @@ const UserRewards = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between text-sm text-gray-400">
-                      <span>ID награды: {reward.reward_id}</span>
-                      <span>Получено: {new Date(reward.claimed_at).toLocaleString()}</span>
+                      <span>
+                        {reward.type === 'shop' ? 'Покупка из магазина' : 'Награда из боевого пропуска'}
+                      </span>
+                      <span>
+                        Получено: {new Date(reward.claimed_at).toLocaleString()}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
