@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,10 +12,30 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Activity, Gift, Trophy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Users, Activity, Gift, Trophy, Plus } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [newBattlePass, setNewBattlePass] = useState({
+    name: "",
+    description: "",
+    startDate: "",
+    endDate: "",
+  });
+  const [selectedBattlePass, setSelectedBattlePass] = useState<string | null>(null);
+  const [newReward, setNewReward] = useState({
+    name: "",
+    description: "",
+    requiredLevel: 1,
+    rewardType: "item" as const,
+    isPremium: false,
+  });
   
   const { data: isAdmin, isLoading: checkingAdmin } = useQuery({
     queryKey: ['isAdmin'],
@@ -39,7 +59,32 @@ const AdminPanel = () => {
     },
   });
 
-  const { data: logs, isLoading: loadingLogs } = useQuery({
+  const { data: battlePasses, isLoading: loadingBattlePasses } = useQuery({
+    queryKey: ['battlePasses'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('battle_passes')
+        .select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: rewards, isLoading: loadingRewards } = useQuery({
+    queryKey: ['rewards', selectedBattlePass],
+    queryFn: async () => {
+      if (!selectedBattlePass) return [];
+      const { data, error } = await supabase
+        .from('rewards')
+        .select('*')
+        .eq('battle_pass_id', selectedBattlePass);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedBattlePass,
+  });
+
+  const { data: logs } = useQuery({
     queryKey: ['actionLogs'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -55,6 +100,71 @@ const AdminPanel = () => {
       return data;
     },
   });
+
+  const handleCreateBattlePass = async () => {
+    const { error } = await supabase
+      .from('battle_passes')
+      .insert([{
+        name: newBattlePass.name,
+        description: newBattlePass.description,
+        start_date: newBattlePass.startDate,
+        end_date: newBattlePass.endDate,
+      }]);
+
+    if (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось создать боевой пропуск",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Успешно",
+        description: "Боевой пропуск создан",
+      });
+      setNewBattlePass({
+        name: "",
+        description: "",
+        startDate: "",
+        endDate: "",
+      });
+    }
+  };
+
+  const handleCreateReward = async () => {
+    if (!selectedBattlePass) return;
+
+    const { error } = await supabase
+      .from('rewards')
+      .insert([{
+        battle_pass_id: selectedBattlePass,
+        name: newReward.name,
+        description: newReward.description,
+        required_level: newReward.requiredLevel,
+        reward_type: newReward.rewardType,
+        is_premium: newReward.isPremium,
+      }]);
+
+    if (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось создать награду",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Успешно",
+        description: "Награда создана",
+      });
+      setNewReward({
+        name: "",
+        description: "",
+        requiredLevel: 1,
+        rewardType: "item",
+        isPremium: false,
+      });
+    }
+  };
 
   useEffect(() => {
     if (!checkingAdmin && !isAdmin) {
@@ -82,7 +192,7 @@ const AdminPanel = () => {
             </TabsTrigger>
             <TabsTrigger value="battle-passes" className="flex items-center gap-2">
               <Trophy className="w-4 h-4" />
-              Боевые пропуска
+              Боевые пропуски
             </TabsTrigger>
             <TabsTrigger value="rewards" className="flex items-center gap-2">
               <Gift className="w-4 h-4" />
@@ -107,7 +217,7 @@ const AdminPanel = () => {
                   <TableBody>
                     {users?.map((profile) => (
                       <TableRow key={profile.id}>
-                        <TableCell className="font-mono">{profile.id}</TableCell>
+                        <TableCell className="font-mono">{profile.numeric_id}</TableCell>
                         <TableCell>{profile.username}</TableCell>
                         <TableCell>{new Date(profile.created_at).toLocaleString('ru-RU')}</TableCell>
                       </TableRow>
@@ -151,10 +261,76 @@ const AdminPanel = () => {
           <TabsContent value="battle-passes">
             <Card>
               <CardHeader>
-                <CardTitle>Боевые пропуска</CardTitle>
+                <CardTitle>Боевые пропуски</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Функционал в разработке...</p>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Создать новый боевой пропуск</h3>
+                  <div className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="name">Название</Label>
+                      <Input
+                        id="name"
+                        value={newBattlePass.name}
+                        onChange={(e) => setNewBattlePass(prev => ({ ...prev, name: e.target.value }))}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="description">Описание</Label>
+                      <Input
+                        id="description"
+                        value={newBattlePass.description}
+                        onChange={(e) => setNewBattlePass(prev => ({ ...prev, description: e.target.value }))}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="startDate">Дата начала</Label>
+                      <Input
+                        id="startDate"
+                        type="datetime-local"
+                        value={newBattlePass.startDate}
+                        onChange={(e) => setNewBattlePass(prev => ({ ...prev, startDate: e.target.value }))}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="endDate">Дата окончания</Label>
+                      <Input
+                        id="endDate"
+                        type="datetime-local"
+                        value={newBattlePass.endDate}
+                        onChange={(e) => setNewBattlePass(prev => ({ ...prev, endDate: e.target.value }))}
+                      />
+                    </div>
+                    <Button onClick={handleCreateBattlePass} className="w-full">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Создать боевой пропуск
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Существующие боевые пропуски</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Название</TableHead>
+                        <TableHead>Описание</TableHead>
+                        <TableHead>Дата начала</TableHead>
+                        <TableHead>Дата окончания</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {battlePasses?.map((pass) => (
+                        <TableRow key={pass.id}>
+                          <TableCell>{pass.name}</TableCell>
+                          <TableCell>{pass.description}</TableCell>
+                          <TableCell>{new Date(pass.start_date).toLocaleString('ru-RU')}</TableCell>
+                          <TableCell>{new Date(pass.end_date).toLocaleString('ru-RU')}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -164,8 +340,109 @@ const AdminPanel = () => {
               <CardHeader>
                 <CardTitle>Награды</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Функционал в разработке...</p>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Выберите боевой пропуск</h3>
+                  <select
+                    className="w-full p-2 rounded-md bg-colizeum-gray text-white border border-colizeum-cyan/20"
+                    value={selectedBattlePass || ''}
+                    onChange={(e) => setSelectedBattlePass(e.target.value || null)}
+                  >
+                    <option value="">Выберите боевой пропуск</option>
+                    {battlePasses?.map((pass) => (
+                      <option key={pass.id} value={pass.id}>{pass.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedBattlePass && (
+                  <>
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Добавить награду</h3>
+                      <div className="grid gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="rewardName">Название награды</Label>
+                          <Input
+                            id="rewardName"
+                            value={newReward.name}
+                            onChange={(e) => setNewReward(prev => ({ ...prev, name: e.target.value }))}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="rewardDescription">Описание награды</Label>
+                          <Input
+                            id="rewardDescription"
+                            value={newReward.description}
+                            onChange={(e) => setNewReward(prev => ({ ...prev, description: e.target.value }))}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="requiredLevel">Требуемый уровень</Label>
+                          <Input
+                            id="requiredLevel"
+                            type="number"
+                            min="1"
+                            value={newReward.requiredLevel}
+                            onChange={(e) => setNewReward(prev => ({ ...prev, requiredLevel: parseInt(e.target.value) }))}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="rewardType">Тип награды</Label>
+                          <select
+                            id="rewardType"
+                            className="w-full p-2 rounded-md bg-colizeum-gray text-white border border-colizeum-cyan/20"
+                            value={newReward.rewardType}
+                            onChange={(e) => setNewReward(prev => ({ ...prev, rewardType: e.target.value as "item" | "bonus" | "discount" }))}
+                          >
+                            <option value="item">Предмет</option>
+                            <option value="bonus">Бонус</option>
+                            <option value="discount">Скидка</option>
+                          </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id="isPremium"
+                            checked={newReward.isPremium}
+                            onChange={(e) => setNewReward(prev => ({ ...prev, isPremium: e.target.checked }))}
+                            className="w-4 h-4"
+                          />
+                          <Label htmlFor="isPremium">Премиум награда</Label>
+                        </div>
+                        <Button onClick={handleCreateReward} className="w-full">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Добавить награду
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold">Существующие награды</h3>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Название</TableHead>
+                            <TableHead>Описание</TableHead>
+                            <TableHead>Уровень</TableHead>
+                            <TableHead>Тип</TableHead>
+                            <TableHead>Премиум</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {rewards?.map((reward) => (
+                            <TableRow key={reward.id}>
+                              <TableCell>{reward.name}</TableCell>
+                              <TableCell>{reward.description}</TableCell>
+                              <TableCell>{reward.required_level}</TableCell>
+                              <TableCell>{reward.reward_type}</TableCell>
+                              <TableCell>{reward.is_premium ? "Да" : "Нет"}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
