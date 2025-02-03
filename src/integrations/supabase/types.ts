@@ -131,24 +131,30 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          display_name: string | null
           id: string
           numeric_id: string
+          points: number
           updated_at: string
           username: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          display_name?: string | null
           id: string
           numeric_id: string
+          points?: number
           updated_at?: string
           username?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          display_name?: string | null
           id?: string
           numeric_id?: string
+          points?: number
           updated_at?: string
           username?: string | null
         }
