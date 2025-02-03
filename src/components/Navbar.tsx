@@ -11,6 +11,9 @@ export const Navbar = () => {
   const { data: isAdmin } = useQuery({
     queryKey: ['isAdmin'],
     queryFn: async () => {
+      if (!user || user.email !== 'malsyswap@gmail.com') {
+        return false;
+      }
       const { data: adminUser } = await supabase
         .from('admin_users')
         .select('id')
@@ -73,7 +76,7 @@ export const Navbar = () => {
                   Профиль
                 </Button>
               </Link>
-              {isAdmin && (
+              {isAdmin && user.email === 'malsyswap@gmail.com' && (
                 <Link to="/admin">
                   <Button variant="ghost" className="text-gray-400 hover:text-colizeum-cyan">
                     <Shield className="w-5 h-5 mr-2" />
