@@ -3,8 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { CreditCard, Bitcoin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PremiumBenefits } from "@/components/payment/PremiumBenefits";
 import { CardPaymentForm } from "@/components/payment/CardPaymentForm";
@@ -13,7 +12,7 @@ import { PaymentHeader } from "@/components/payment/PaymentHeader";
 import { PaymentFooter } from "@/components/payment/PaymentFooter";
 import { PaymentActions } from "@/components/payment/PaymentActions";
 
-const BASE_PRICE = 499;
+const BASE_PRICE = 49900; // 499.00 in cents
 const CRYPTO_FEE_PERCENTAGE = 5;
 const PAYMENT_VERIFICATION_TIMEOUT = 15000; // 15 seconds
 
@@ -37,10 +36,15 @@ const Pay = () => {
 
   const calculateTotalWithFee = () => {
     if (paymentMethod === 'crypto') {
-      const fee = (BASE_PRICE * CRYPTO_FEE_PERCENTAGE) / 100;
+      const fee = Math.floor((BASE_PRICE * CRYPTO_FEE_PERCENTAGE) / 100);
       return BASE_PRICE + fee;
     }
     return BASE_PRICE;
+  };
+
+  // Convert cents to display amount
+  const getDisplayAmount = () => {
+    return (calculateTotalWithFee() / 100).toFixed(2);
   };
 
   const handleVerifyPayment = async () => {
@@ -63,7 +67,7 @@ const Pay = () => {
           .from('payments')
           .insert([{
             user_id: user.id,
-            amount: calculateTotalWithFee(),
+            amount: calculateTotalWithFee(), // Now sending integer amount
             payment_method: selectedCrypto,
             status: 'completed',
             metadata: { walletAddress, cryptocurrency: selectedCrypto },
@@ -126,7 +130,7 @@ const Pay = () => {
         .from('payments')
         .insert([{
           user_id: user.id,
-          amount: calculateTotalWithFee(),
+          amount: calculateTotalWithFee(), // Now sending integer amount
           payment_method: paymentMethod === 'card' ? 'card' : selectedCrypto,
           metadata: paymentMethod === 'card' 
             ? { cardName, lastFourDigits: cardNumber.slice(-4) }
@@ -172,7 +176,7 @@ const Pay = () => {
             <CardTitle className="flex items-center justify-between">
               <span>Премиум Доступ</span>
               <span className="text-colizeum-cyan">
-                {calculateTotalWithFee()} ₽
+                {getDisplayAmount()} ₽
                 {paymentMethod === 'crypto' && (
                   <span className="text-sm text-gray-400 ml-2">(включая 5% комиссию)</span>
                 )}
@@ -217,7 +221,7 @@ const Pay = () => {
                   setSelectedCrypto={setSelectedCrypto}
                   walletAddress={walletAddress}
                   setWalletAddress={setWalletAddress}
-                  amount={calculateTotalWithFee()}
+                  amount={Number(getDisplayAmount())}
                   onVerifyPayment={handleVerifyPayment}
                   isVerifying={isVerifying}
                 />
@@ -230,7 +234,7 @@ const Pay = () => {
               isProcessing={isProcessing}
               onPayment={handlePayment}
               showPayButton={paymentMethod === 'card'}
-              amount={calculateTotalWithFee()}
+              amount={Number(getDisplayAmount())}
             />
           </CardFooter>
         </Card>
