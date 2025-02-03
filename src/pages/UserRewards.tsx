@@ -29,7 +29,10 @@ const UserRewards = () => {
         .eq('user_id', user?.id)
         .order('claimed_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching rewards:', error);
+        throw error;
+      }
       return data;
     },
     enabled: !!user,
@@ -43,17 +46,28 @@ const UserRewards = () => {
         .eq('id', rewardId)
         .eq('user_id', user?.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting reward:', error);
+        throw error;
+      }
+      return rewardId;
     },
-    onSuccess: () => {
-      // Обновляем кэш для списка наград
+    onSuccess: (rewardId) => {
+      // Оптимистично обновляем кэш, удаляя награду из списка
+      queryClient.setQueryData(['userRewardsDetails', user?.id], (oldData: any) => {
+        return oldData?.filter((reward: any) => reward.id !== rewardId);
+      });
+      
+      // Также инвалидируем кэш для обеспечения актуальности данных
       queryClient.invalidateQueries({ queryKey: ['userRewardsDetails', user?.id] });
+      
       toast({
         title: "Успех!",
         description: "Награда отмечена как полученная",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Mutation error:', error);
       toast({
         title: "Ошибка",
         description: "Не удалось отметить награду как полученную",
