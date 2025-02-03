@@ -29,6 +29,7 @@ const AdminPanel = () => {
     startDate: "",
     endDate: "",
   });
+  
   const [selectedBattlePass, setSelectedBattlePass] = useState<string | null>(null);
   const [newReward, setNewReward] = useState<{
     name: string;
@@ -43,7 +44,7 @@ const AdminPanel = () => {
     rewardType: "item",
     isPremium: false,
   });
-  
+
   const { data: isAdmin, isLoading: checkingAdmin } = useQuery({
     queryKey: ['isAdmin'],
     queryFn: async () => {
@@ -84,7 +85,7 @@ const AdminPanel = () => {
         .from('action_logs')
         .select(`
           *,
-          profiles:user_id (
+          profiles!action_logs_user_id_fkey (
             username
           )
         `)
