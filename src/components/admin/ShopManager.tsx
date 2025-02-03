@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,7 @@ import { logAction } from "@/lib/logger";
 export const ShopManager = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -30,19 +31,64 @@ export const ShopManager = () => {
     },
   });
 
+  const handleFileUpload = async (file: File) => {
+    if (!file) return null;
+    
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('shop_items')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('shop_items')
+        .getPublicUrl(filePath);
+
+      return { path: filePath, url: publicUrl };
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить изображение",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
-    const itemData = {
-      name: formData.get('name') as string,
-      description: formData.get('description') as string,
-      price: parseInt(formData.get('price') as string),
-      image_url: formData.get('image_url') as string,
-      is_available: true,
-    };
+    
+    const file = (formData.get('image') as File)?.size > 0 
+      ? formData.get('image') as File 
+      : null;
 
     try {
+      let imageData = null;
+      if (file) {
+        imageData = await handleFileUpload(file);
+        if (!imageData) return;
+      }
+
+      const itemData = {
+        name: formData.get('name') as string,
+        description: formData.get('description') as string,
+        price: parseInt(formData.get('price') as string),
+        image_url: imageData?.url || editingItem?.image_url,
+        image_path: imageData?.path || editingItem?.image_path,
+        is_available: true,
+      };
+
       if (editingItem) {
         const { error } = await supabase
           .from('shop_items')
@@ -86,6 +132,14 @@ export const ShopManager = () => {
 
   const handleDelete = async (item: any) => {
     try {
+      if (item.image_path) {
+        const { error: storageError } = await supabase.storage
+          .from('shop_items')
+          .remove([item.image_path]);
+        
+        if (storageError) throw storageError;
+      }
+
       const { error } = await supabase
         .from('shop_items')
         .delete()
@@ -156,13 +210,23 @@ export const ShopManager = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="image_url">URL изображения</Label>
+                <Label htmlFor="image">Изображение</Label>
                 <Input
-                  id="image_url"
-                  name="image_url"
-                  type="url"
-                  defaultValue={editingItem?.image_url}
+                  id="image"
+                  name="image"
+                  type="file"
+                  accept="image/*"
+                  className="cursor-pointer"
                 />
+                {editingItem?.image_url && (
+                  <div className="mt-2">
+                    <img
+                      src={editingItem.image_url}
+                      alt={editingItem.name}
+                      className="w-32 h-32 object-cover rounded"
+                    />
+                  </div>
+                )}
               </div>
               <div className="flex justify-end space-x-2">
                 <Button
@@ -172,7 +236,8 @@ export const ShopManager = () => {
                 >
                   Отмена
                 </Button>
-                <Button type="submit">
+                <Button type="submit" disabled={isUploading}>
+                  {isUploading && <Upload className="w-4 h-4 mr-2 animate-spin" />}
                   {editingItem ? "Сохранить" : "Добавить"}
                 </Button>
               </div>
@@ -187,6 +252,7 @@ export const ShopManager = () => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Изображение</TableHead>
               <TableHead>Название</TableHead>
               <TableHead>Описание</TableHead>
               <TableHead>Цена</TableHead>
@@ -196,6 +262,15 @@ export const ShopManager = () => {
           <TableBody>
             {items?.map((item) => (
               <TableRow key={item.id}>
+                <TableCell>
+                  {item.image_url && (
+                    <img
+                      src={item.image_url}
+                      alt={item.name}
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  )}
+                </TableCell>
                 <TableCell>{item.name}</TableCell>
                 <TableCell>{item.description}</TableCell>
                 <TableCell>{item.price} очков</TableCell>

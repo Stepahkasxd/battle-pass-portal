@@ -209,6 +209,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          image_path: string | null
           image_url: string | null
           is_available: boolean | null
           name: string
@@ -219,6 +220,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_path?: string | null
           image_url?: string | null
           is_available?: boolean | null
           name: string
@@ -229,6 +231,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_path?: string | null
           image_url?: string | null
           is_available?: boolean | null
           name?: string
