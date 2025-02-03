@@ -150,7 +150,7 @@ const BattlePassDetails = () => {
               return (
                 <Card 
                   key={reward.id}
-                  className={`bg-colizeum-gray border-colizeum-cyan/20 p-6 animate-fade-in transition-transform hover:scale-[1.02] ${
+                  className={`bg-colizeum-gray border-colizeum-cyan/20 p-6 animate-fade-in transition-transform hover:scale-[1.02] flex flex-col ${
                     !isUnlocked ? 'opacity-50' : ''
                   }`}
                 >
@@ -163,15 +163,17 @@ const BattlePassDetails = () => {
                     )}
                   </div>
 
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    {reward.name}
-                  </h3>
-                  <p className="text-sm text-gray-400 mb-4">
-                    {reward.description}
-                  </p>
+                  <div className="flex-grow">
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                      {reward.name}
+                    </h3>
+                    <p className="text-sm text-gray-400 mb-4">
+                      {reward.description}
+                    </p>
+                  </div>
 
-                  <div className="mt-auto">
-                    <div className="text-sm text-gray-400 mb-2">
+                  <div className="mt-auto space-y-2">
+                    <div className="text-sm text-gray-400">
                       Требуемый уровень: {reward.required_level}
                     </div>
                     
