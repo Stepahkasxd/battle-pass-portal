@@ -1,62 +1,29 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users, Activity, Gift, Trophy, Plus } from "lucide-react";
-import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { UserBattlePassesManager } from "@/components/admin/UserBattlePassesManager";
+import { Users, Activity, Trophy, Gift, Plus } from "lucide-react";
+import { UserPointsManager } from "@/components/admin/UserPointsManager";
 
 const AdminPanel = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
-  const [newBattlePass, setNewBattlePass] = useState({
-    name: "",
-    description: "",
-    startDate: "",
-    endDate: "",
-  });
-  
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [selectedBattlePass, setSelectedBattlePass] = useState<string | null>(null);
-  const [newReward, setNewReward] = useState<{
-    name: string;
-    description: string;
-    requiredLevel: number;
-    rewardType: "item" | "bonus" | "discount";
-    isPremium: boolean;
-  }>({
-    name: "",
-    description: "",
-    requiredLevel: 1,
-    rewardType: "item",
-    isPremium: false,
-  });
 
-  const { data: isAdmin, isLoading: checkingAdmin } = useQuery({
-    queryKey: ['isAdmin'],
-    queryFn: async () => {
-      const { data: adminUser } = await supabase
-        .from('admin_users')
-        .select('id')
-        .single();
-      return !!adminUser;
-    },
-  });
-
-  const { data: users, isLoading: loadingUsers } = useQuery({
+  const { data: users, refetch: refetchUsers } = useQuery({
     queryKey: ['adminUsers'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -67,7 +34,7 @@ const AdminPanel = () => {
     },
   });
 
-  const { data: battlePasses, isLoading: loadingBattlePasses } = useQuery({
+  const { data: battlePasses } = useQuery({
     queryKey: ['battlePasses'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -78,107 +45,63 @@ const AdminPanel = () => {
     },
   });
 
-  const { data: logs } = useQuery({
-    queryKey: ['actionLogs'],
+  const { data: userBattlePasses, refetch: refetchUserBattlePasses } = useQuery({
+    queryKey: ['userBattlePasses'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('action_logs')
+        .from('user_battle_passes')
         .select(`
           *,
-          profiles!action_logs_user_id_fkey (
-            username
+          profiles!user_battle_passes_user_id_fkey (
+            username,
+            numeric_id
+          ),
+          battle_passes!user_battle_passes_battle_pass_id_fkey (
+            name,
+            description
           )
-        `)
-        .order('created_at', { ascending: false });
+        `);
       if (error) throw error;
       return data;
     },
   });
 
-  const { data: rewards } = useQuery({
-    queryKey: ['rewards'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('rewards')
-        .select('*');
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const handleCreateBattlePass = async () => {
-    const { error } = await supabase
-      .from('battle_passes')
-      .insert([{
-        name: newBattlePass.name,
-        description: newBattlePass.description,
-        start_date: newBattlePass.startDate,
-        end_date: newBattlePass.endDate,
-      }]);
-
-    if (error) {
+  const handleAssignBattlePass = async () => {
+    if (!selectedUser || !selectedBattlePass) {
       toast({
         title: "Ошибка",
-        description: "Не удалось создать боевой пропуск",
+        description: "Выберите пользователя и боевой пропуск",
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Успешно",
-        description: "Боевой пропуск создан",
-      });
-      setNewBattlePass({
-        name: "",
-        description: "",
-        startDate: "",
-        endDate: "",
-      });
+      return;
     }
-  };
-
-  const handleCreateReward = async () => {
-    if (!selectedBattlePass) return;
 
     const { error } = await supabase
-      .from('rewards')
+      .from('user_battle_passes')
       .insert([{
+        user_id: selectedUser,
         battle_pass_id: selectedBattlePass,
-        name: newReward.name,
-        description: newReward.description,
-        required_level: newReward.requiredLevel,
-        reward_type: newReward.rewardType,
-        is_premium: newReward.isPremium,
+        current_level: 1,
+        current_xp: 0,
+        is_premium: false,
       }]);
 
     if (error) {
       toast({
         title: "Ошибка",
-        description: "Не удалось создать награду",
+        description: "Не удалось выдать боевой пропуск",
         variant: "destructive",
       });
     } else {
       toast({
         title: "Успешно",
-        description: "Награда создана",
+        description: "Боевой пропуск выдан",
       });
-      setNewReward({
-        name: "",
-        description: "",
-        requiredLevel: 1,
-        rewardType: "item",
-        isPremium: false,
-      });
+      refetchUserBattlePasses();
+      setSelectedUser(null);
+      setSelectedBattlePass(null);
     }
   };
-
-  useEffect(() => {
-    if (!checkingAdmin && !isAdmin) {
-      navigate('/');
-    }
-  }, [isAdmin, checkingAdmin, navigate]);
-
-  if (checkingAdmin) return null;
-  if (!isAdmin) return null;
 
   return (
     <div className="min-h-screen bg-colizeum-dark">
@@ -203,36 +126,111 @@ const AdminPanel = () => {
               <Gift className="w-4 h-4" />
               Награды
             </TabsTrigger>
-            <TabsTrigger value="user-battle-passes" className="flex items-center gap-2">
-              <Trophy className="w-4 h-4" />
-              Пропуски пользователей
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="users">
             <Card>
               <CardHeader>
-                <CardTitle>Пользователи</CardTitle>
+                <CardTitle>Управление пользователями</CardTitle>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Имя пользователя</TableHead>
-                      <TableHead>Дата регистрации</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users?.map((profile) => (
-                      <TableRow key={profile.id}>
-                        <TableCell className="font-mono">{profile.numeric_id}</TableCell>
-                        <TableCell>{profile.username}</TableCell>
-                        <TableCell>{new Date(profile.created_at).toLocaleString('ru-RU')}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Выдать боевой пропуск</h3>
+                    <div className="grid gap-4">
+                      <div className="grid gap-2">
+                        <Label>Выберите пользователя</Label>
+                        <select
+                          className="w-full p-2 rounded-md bg-colizeum-gray text-white border border-colizeum-cyan/20"
+                          value={selectedUser || ''}
+                          onChange={(e) => setSelectedUser(e.target.value || null)}
+                        >
+                          <option value="">Выберите пользователя</option>
+                          {users?.map((user) => (
+                            <option key={user.id} value={user.id}>
+                              {user.username} (ID: {user.numeric_id})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>Выберите боевой пропуск</Label>
+                        <select
+                          className="w-full p-2 rounded-md bg-colizeum-gray text-white border border-colizeum-cyan/20"
+                          value={selectedBattlePass || ''}
+                          onChange={(e) => setSelectedBattlePass(e.target.value || null)}
+                        >
+                          <option value="">Выберите боевой пропуск</option>
+                          {battlePasses?.map((pass) => (
+                            <option key={pass.id} value={pass.id}>{pass.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <Button onClick={handleAssignBattlePass} className="w-full">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Выдать боевой пропуск
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Список пользователей</h3>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>ID</TableHead>
+                          <TableHead>Имя пользователя</TableHead>
+                          <TableHead>Очки</TableHead>
+                          <TableHead>Действия</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users?.map((user) => (
+                          <TableRow key={user.id}>
+                            <TableCell className="font-mono">{user.numeric_id}</TableCell>
+                            <TableCell>{user.username}</TableCell>
+                            <TableCell>{user.points}</TableCell>
+                            <TableCell>
+                              <UserPointsManager
+                                userId={user.id}
+                                currentPoints={user.points}
+                                onUpdate={refetchUsers}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Активные боевые пропуски</h3>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Пользователь</TableHead>
+                          <TableHead>ID пользователя</TableHead>
+                          <TableHead>Боевой пропуск</TableHead>
+                          <TableHead>Уровень</TableHead>
+                          <TableHead>Опыт</TableHead>
+                          <TableHead>Премиум</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {userBattlePasses?.map((ubp) => (
+                          <TableRow key={ubp.id}>
+                            <TableCell>{ubp.profiles?.username}</TableCell>
+                            <TableCell>{ubp.profiles?.numeric_id}</TableCell>
+                            <TableCell>{ubp.battle_passes?.name}</TableCell>
+                            <TableCell>{ubp.current_level}</TableCell>
+                            <TableCell>{ubp.current_xp}</TableCell>
+                            <TableCell>{ubp.is_premium ? "Да" : "Нет"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -436,10 +434,6 @@ const AdminPanel = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="user-battle-passes">
-            <UserBattlePassesManager />
           </TabsContent>
         </Tabs>
       </div>
