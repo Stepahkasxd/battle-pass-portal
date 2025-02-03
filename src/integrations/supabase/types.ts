@@ -413,6 +413,7 @@ export type Database = {
         | "shop_item_update"
         | "shop_item_delete"
         | "item_purchase"
+        | "reward_claimed"
       mission_type: "daily" | "weekly" | "seasonal"
       reward_type: "discount" | "bonus" | "item" | "shop_item"
     }
