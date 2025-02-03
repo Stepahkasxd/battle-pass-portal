@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Star, Gift, User, Settings, Award, Key, ChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Trophy, Star, Gift, User, Settings, Award, Key, ChevronRight, LogOut } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { BattlePassCard } from "@/components/BattlePassCard";
@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 const GuestDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const { data: profile } = useQuery({
     queryKey: ['profile'],
@@ -119,6 +120,16 @@ const GuestDashboard = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate('/auth');
+      toast.success('Вы успешно вышли из системы');
+    } catch (error: any) {
+      toast.error('Ошибка при выходе из системы');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-colizeum-dark p-4 pt-24">
       <div className="container mx-auto max-w-6xl">
@@ -216,6 +227,15 @@ const GuestDashboard = () => {
                   </Form>
                 </DialogContent>
               </Dialog>
+
+              <Button 
+                variant="outline" 
+                className="border-colizeum-cyan/20 text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                onClick={handleLogout}
+              >
+                <LogOut className="w-5 h-5 mr-2" />
+                Выйти
+              </Button>
             </div>
           </div>
         </div>
