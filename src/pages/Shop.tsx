@@ -79,16 +79,6 @@ const Shop = () => {
 
       if (pointsError) throw pointsError;
 
-      // Создаем запись о награде
-      const { error: rewardError } = await supabase
-        .from('user_rewards')
-        .insert({
-          user_id: user.id,
-          reward_id: item.id,
-        });
-
-      if (rewardError) throw rewardError;
-
       await logAction('item_purchase', `Покупка товара: ${item.name}`);
 
       toast({
@@ -103,6 +93,18 @@ const Shop = () => {
         description: "Не удалось совершить покупку",
         variant: "destructive",
       });
+      
+      // В случае ошибки, откатываем изменения
+      if (userProfile) {
+        const { error: rollbackError } = await supabase
+          .from('profiles')
+          .update({ points: userProfile.points })
+          .eq('id', user.id);
+
+        if (rollbackError) {
+          console.error('Rollback error:', rollbackError);
+        }
+      }
     }
   };
 
