@@ -1,12 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Gift, Award } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const UserRewards = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: rewards, isLoading } = useQuery({
     queryKey: ['userRewardsDetails', user?.id],
@@ -29,6 +33,33 @@ const UserRewards = () => {
       return data;
     },
     enabled: !!user,
+  });
+
+  const markAsReceived = useMutation({
+    mutationFn: async (rewardId: string) => {
+      const { error } = await supabase
+        .from('user_rewards')
+        .delete()
+        .eq('id', rewardId)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userRewards'] });
+      queryClient.invalidateQueries({ queryKey: ['userRewardsDetails'] });
+      toast({
+        title: "Успех!",
+        description: "Награда отмечена как полученная",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось отметить награду как полученную",
+        variant: "destructive",
+      });
+    },
   });
 
   if (isLoading) {
@@ -65,18 +96,27 @@ const UserRewards = () => {
                   className="bg-colizeum-gray border-colizeum-cyan/20 hover:border-colizeum-cyan/40 transition-colors animate-fade-in"
                 >
                   <CardHeader>
-                    <div className="flex items-center space-x-4">
-                      <div className="p-2 bg-colizeum-dark rounded-lg">
-                        <Award className="w-6 h-6 text-colizeum-cyan animate-pulse" />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="p-2 bg-colizeum-dark rounded-lg">
+                          <Award className="w-6 h-6 text-colizeum-cyan animate-pulse" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-white text-lg">
+                            {reward.rewards?.name}
+                          </CardTitle>
+                          <p className="text-sm text-gray-400">
+                            {reward.rewards?.description}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <CardTitle className="text-white text-lg">
-                          {reward.rewards?.name}
-                        </CardTitle>
-                        <p className="text-sm text-gray-400">
-                          {reward.rewards?.description}
-                        </p>
-                      </div>
+                      <Button
+                        variant="outline"
+                        className="bg-colizeum-cyan/10 hover:bg-colizeum-cyan/20 border-colizeum-cyan/20"
+                        onClick={() => markAsReceived.mutate(reward.id)}
+                      >
+                        Получил
+                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent>
