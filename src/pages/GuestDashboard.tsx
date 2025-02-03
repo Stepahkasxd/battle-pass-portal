@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Star, Target, User, Settings, Award, Key, ChevronRight } from "lucide-react";
+import { Trophy, Star, Gift, User, Settings, Award, Key, ChevronRight, History } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,6 +56,30 @@ const GuestDashboard = () => {
         `)
         .gte('end_date', now)
         .lte('start_date', now);
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const { data: userRewards } = useQuery({
+    queryKey: ['userRewards'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_rewards')
+        .select(`
+          *,
+          rewards (
+            id,
+            name,
+            description,
+            reward_type,
+            required_level,
+            is_premium
+          )
+        `)
+        .eq('user_id', user?.id);
 
       if (error) throw error;
       return data;
@@ -271,7 +295,7 @@ const GuestDashboard = () => {
                 ))
               ) : (
                 <div className="text-center py-8">
-                  <History className="w-12 h-12 text-colizeum-cyan mx-auto mb-4 animate-levitate" />
+                  <Gift className="w-12 h-12 text-colizeum-cyan mx-auto mb-4 animate-levitate" />
                   <h3 className="text-xl font-bold text-white mb-2">
                     История наград пуста
                   </h3>
