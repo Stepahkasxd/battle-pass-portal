@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      action_logs: {
+        Row: {
+          action_type: Database["public"]["Enums"]["action_type"]
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: Database["public"]["Enums"]["action_type"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: Database["public"]["Enums"]["action_type"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      admin_users: {
+        Row: {
+          created_at: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       battle_passes: {
         Row: {
           created_at: string
@@ -255,6 +297,19 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      action_type:
+        | "user_login"
+        | "user_register"
+        | "battle_pass_create"
+        | "battle_pass_update"
+        | "battle_pass_delete"
+        | "reward_create"
+        | "reward_update"
+        | "reward_delete"
+        | "mission_create"
+        | "mission_update"
+        | "mission_delete"
+        | "admin_action"
       mission_type: "daily" | "weekly" | "seasonal"
       reward_type: "discount" | "bonus" | "item"
     }
