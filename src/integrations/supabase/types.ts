@@ -9,7 +9,244 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      battle_passes: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_date: string
+          id: string
+          name: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_date: string
+          id?: string
+          name: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          name?: string
+          start_date?: string
+        }
+        Relationships: []
+      }
+      missions: {
+        Row: {
+          battle_pass_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          mission_type: Database["public"]["Enums"]["mission_type"]
+          required_count: number | null
+          title: string
+          xp_reward: number
+        }
+        Insert: {
+          battle_pass_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          mission_type: Database["public"]["Enums"]["mission_type"]
+          required_count?: number | null
+          title: string
+          xp_reward: number
+        }
+        Update: {
+          battle_pass_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          mission_type?: Database["public"]["Enums"]["mission_type"]
+          required_count?: number | null
+          title?: string
+          xp_reward?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "missions_battle_pass_id_fkey"
+            columns: ["battle_pass_id"]
+            isOneToOne: false
+            referencedRelation: "battle_passes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      rewards: {
+        Row: {
+          battle_pass_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_premium: boolean | null
+          name: string
+          required_level: number
+          reward_type: Database["public"]["Enums"]["reward_type"]
+        }
+        Insert: {
+          battle_pass_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_premium?: boolean | null
+          name: string
+          required_level: number
+          reward_type: Database["public"]["Enums"]["reward_type"]
+        }
+        Update: {
+          battle_pass_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_premium?: boolean | null
+          name?: string
+          required_level?: number
+          reward_type?: Database["public"]["Enums"]["reward_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rewards_battle_pass_id_fkey"
+            columns: ["battle_pass_id"]
+            isOneToOne: false
+            referencedRelation: "battle_passes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_battle_passes: {
+        Row: {
+          battle_pass_id: string | null
+          created_at: string
+          current_level: number | null
+          current_xp: number | null
+          id: string
+          is_premium: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          battle_pass_id?: string | null
+          created_at?: string
+          current_level?: number | null
+          current_xp?: number | null
+          id?: string
+          is_premium?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          battle_pass_id?: string | null
+          created_at?: string
+          current_level?: number | null
+          current_xp?: number | null
+          id?: string
+          is_premium?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_battle_passes_battle_pass_id_fkey"
+            columns: ["battle_pass_id"]
+            isOneToOne: false
+            referencedRelation: "battle_passes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_missions: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          mission_id: string | null
+          progress: number | null
+          user_id: string | null
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          mission_id?: string | null
+          progress?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          mission_id?: string | null
+          progress?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_missions_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_rewards: {
+        Row: {
+          claimed_at: string
+          id: string
+          reward_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          claimed_at?: string
+          id?: string
+          reward_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          claimed_at?: string
+          id?: string
+          reward_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rewards_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +255,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      mission_type: "daily" | "weekly" | "seasonal"
+      reward_type: "discount" | "bonus" | "item"
     }
     CompositeTypes: {
       [_ in never]: never
