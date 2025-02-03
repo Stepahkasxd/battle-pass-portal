@@ -22,6 +22,7 @@ interface NewBattlePass {
   description: string;
   start_date: string;
   end_date: string;
+  is_premium: boolean;
   rewards: NewReward[];
 }
 
@@ -32,6 +33,7 @@ export const BattlePassManager = () => {
     description: "",
     start_date: "",
     end_date: "",
+    is_premium: false,
     rewards: [],
   });
 
@@ -90,6 +92,29 @@ export const BattlePassManager = () => {
     }));
   };
 
+  const handleDeleteBattlePass = async (id: string) => {
+    const { error } = await supabase
+      .from('battle_passes')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить боевой пропуск",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Успешно",
+      description: "Боевой пропуск удален",
+    });
+
+    refetchBattlePasses();
+  };
+
   const handleCreateBattlePass = async () => {
     if (!newBattlePass.name || !newBattlePass.start_date || !newBattlePass.end_date) {
       toast({
@@ -107,6 +132,7 @@ export const BattlePassManager = () => {
         description: newBattlePass.description,
         start_date: newBattlePass.start_date,
         end_date: newBattlePass.end_date,
+        is_premium: newBattlePass.is_premium,
       }])
       .select()
       .single();
@@ -149,6 +175,7 @@ export const BattlePassManager = () => {
       description: "",
       start_date: "",
       end_date: "",
+      is_premium: false,
       rewards: [],
     });
 
@@ -183,6 +210,16 @@ export const BattlePassManager = () => {
               value={newBattlePass.end_date}
               onChange={(e) => setNewBattlePass(prev => ({ ...prev, end_date: e.target.value }))}
             />
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={newBattlePass.is_premium}
+                onCheckedChange={(checked) => setNewBattlePass(prev => ({ 
+                  ...prev, 
+                  is_premium: checked 
+                }))}
+              />
+              <span>Премиум пропуск</span>
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -229,7 +266,7 @@ export const BattlePassManager = () => {
                 />
                 <span>Премиум награда</span>
               </div>
-              <Button onClick={handleAddReward}>
+              <Button onClick={handleAddReward} className="w-full">
                 <Plus className="w-4 h-4 mr-2" />
                 Добавить награду
               </Button>
@@ -286,7 +323,9 @@ export const BattlePassManager = () => {
                 <TableHead>Описание</TableHead>
                 <TableHead>Дата начала</TableHead>
                 <TableHead>Дата окончания</TableHead>
+                <TableHead>Премиум</TableHead>
                 <TableHead>Кол-во наград</TableHead>
+                <TableHead>Действия</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -296,7 +335,17 @@ export const BattlePassManager = () => {
                   <TableCell>{pass.description}</TableCell>
                   <TableCell>{new Date(pass.start_date).toLocaleDateString()}</TableCell>
                   <TableCell>{new Date(pass.end_date).toLocaleDateString()}</TableCell>
+                  <TableCell>{pass.is_premium ? "Да" : "Нет"}</TableCell>
                   <TableCell>{pass.rewards?.length || 0}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDeleteBattlePass(pass.id)}
+                    >
+                      <Trash className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
