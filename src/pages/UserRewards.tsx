@@ -16,7 +16,7 @@ const UserRewards = () => {
   const { data: rewards, isLoading } = useQuery({
     queryKey: ['userRewardsDetails', user?.id],
     queryFn: async () => {
-      // Получаем награды из боевого пропуска
+      // Get rewards from battle pass
       const { data: rewardsData, error: rewardsError } = await supabase
         .from('user_rewards')
         .select(`
@@ -32,7 +32,7 @@ const UserRewards = () => {
 
       if (rewardsError) throw rewardsError;
 
-      // Получаем покупки из магазина
+      // Get purchases from shop
       const { data: purchasesData, error: purchasesError } = await supabase
         .from('user_purchases')
         .select(`
@@ -48,7 +48,7 @@ const UserRewards = () => {
 
       if (purchasesError) throw purchasesError;
 
-      // Объединяем данные
+      // Combine data
       const allRewards = [
         ...rewardsData.map((r: any) => ({
           ...r,
@@ -64,6 +64,7 @@ const UserRewards = () => {
           image_url: p.shop_items?.image_url,
           price: p.shop_items?.price,
           claimed_at: p.purchased_at,
+          received: p.received,
         })),
       ];
 
@@ -104,17 +105,7 @@ const UserRewards = () => {
 
   const markAsReceived = useMutation({
     mutationFn: async (reward: any) => {
-      if (reward.type === 'battle_pass') {
-        // Update user_rewards status
-        const { error } = await supabase
-          .from('user_rewards')
-          .update({ received: true })
-          .eq('id', reward.id)
-          .eq('user_id', user?.id);
-
-        if (error) throw error;
-      } else if (reward.type === 'shop') {
-        // Update user_purchases status
+      if (reward.type === 'shop') {
         const { error } = await supabase
           .from('user_purchases')
           .update({ received: true })
@@ -124,7 +115,7 @@ const UserRewards = () => {
         if (error) throw error;
       }
       
-      await logAction('reward_received', `Получена награда: ${reward.name}`);
+      await logAction('reward_claimed', `Получена награда: ${reward.name}`);
       return reward;
     },
     onSuccess: () => {
@@ -209,23 +200,25 @@ const UserRewards = () => {
                       </div>
                       <div className="flex items-center space-x-2">
                         {reward.type === 'shop' && (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDelete(reward)}
-                            className="bg-red-500/10 hover:bg-red-500/20 text-red-500"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(reward)}
+                              className="bg-red-500/10 hover:bg-red-500/20 text-red-500"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="bg-colizeum-cyan/10 hover:bg-colizeum-cyan/20 border-colizeum-cyan/20"
+                              onClick={() => markAsReceived.mutate(reward)}
+                              disabled={reward.received}
+                            >
+                              {reward.received ? 'Получено' : 'Получить'}
+                            </Button>
+                          </>
                         )}
-                        <Button
-                          variant="outline"
-                          className="bg-colizeum-cyan/10 hover:bg-colizeum-cyan/20 border-colizeum-cyan/20"
-                          onClick={() => markAsReceived.mutate(reward)}
-                          disabled={reward.received}
-                        >
-                          {reward.received ? 'Получено' : 'Получить'}
-                        </Button>
                       </div>
                     </div>
                   </CardHeader>
