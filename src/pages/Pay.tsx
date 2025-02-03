@@ -1,24 +1,15 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, Star, Zap, CreditCard, Bitcoin, Coins, Currency } from "lucide-react";
+import { CreditCard, Bitcoin } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-
-const CRYPTOCURRENCIES = [
-  { id: 'BTC', name: 'Bitcoin', symbol: 'BTC', icon: Bitcoin },
-  { id: 'ETH', name: 'Ethereum', symbol: 'ETH', icon: Coins },
-  { id: 'USDT', name: 'Tether', symbol: 'USDT', icon: Currency },
-  { id: 'BNB', name: 'Binance Coin', symbol: 'BNB', icon: Coins },
-  { id: 'SOL', name: 'Solana', symbol: 'SOL', icon: Coins },
-  { id: 'XRP', name: 'Ripple', symbol: 'XRP', icon: Currency },
-  { id: 'USDC', name: 'USD Coin', symbol: 'USDC', icon: Currency },
-];
+import { PremiumBenefits } from "@/components/payment/PremiumBenefits";
+import { CardPaymentForm } from "@/components/payment/CardPaymentForm";
+import { CryptoPaymentForm } from "@/components/payment/CryptoPaymentForm";
 
 const BASE_PRICE = 499;
 const CRYPTO_FEE_PERCENTAGE = 5;
@@ -140,20 +131,7 @@ const Pay = () => {
           </CardHeader>
           
           <CardContent className="space-y-6">
-            <div className="grid gap-4">
-              <div className="flex items-center gap-3">
-                <Star className="w-5 h-5 text-colizeum-cyan" />
-                <span>Доступ ко всем премиум наградам</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Zap className="w-5 h-5 text-colizeum-cyan" />
-                <span>Ускоренный прогресс</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Shield className="w-5 h-5 text-colizeum-cyan" />
-                <span>Эксклюзивные возможности</span>
-              </div>
-            </div>
+            <PremiumBenefits />
 
             <Tabs defaultValue="card" className="w-full" onValueChange={(value) => setPaymentMethod(value as 'card' | 'crypto')}>
               <TabsList className="w-full">
@@ -167,65 +145,26 @@ const Pay = () => {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="card" className="space-y-4 mt-4">
-                <Input
-                  placeholder="Номер карты"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(e.target.value)}
-                  className="bg-colizeum-dark"
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    placeholder="MM/YY"
-                    value={expiryDate}
-                    onChange={(e) => setExpiryDate(e.target.value)}
-                    className="bg-colizeum-dark"
-                  />
-                  <Input
-                    placeholder="CVV"
-                    value={cvv}
-                    onChange={(e) => setCvv(e.target.value)}
-                    className="bg-colizeum-dark"
-                    type="password"
-                    maxLength={3}
-                  />
-                </div>
-                <Input
-                  placeholder="Имя держателя карты"
-                  value={cardName}
-                  onChange={(e) => setCardName(e.target.value)}
-                  className="bg-colizeum-dark"
+              <TabsContent value="card" className="mt-4">
+                <CardPaymentForm
+                  cardNumber={cardNumber}
+                  setCardNumber={setCardNumber}
+                  expiryDate={expiryDate}
+                  setExpiryDate={setExpiryDate}
+                  cvv={cvv}
+                  setCvv={setCvv}
+                  cardName={cardName}
+                  setCardName={setCardName}
                 />
               </TabsContent>
 
-              <TabsContent value="crypto" className="space-y-4 mt-4">
-                <Select value={selectedCrypto} onValueChange={setSelectedCrypto}>
-                  <SelectTrigger className="bg-colizeum-dark">
-                    <SelectValue placeholder="Выберите криптовалюту" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CRYPTOCURRENCIES.map((crypto) => {
-                      const IconComponent = crypto.icon;
-                      return (
-                        <SelectItem key={crypto.id} value={crypto.id}>
-                          <div className="flex items-center gap-2">
-                            <IconComponent className="w-4 h-4" />
-                            {crypto.name} ({crypto.symbol})
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-                <Input
-                  placeholder="Адрес криптокошелька"
-                  value={walletAddress}
-                  onChange={(e) => setWalletAddress(e.target.value)}
-                  className="bg-colizeum-dark"
+              <TabsContent value="crypto" className="mt-4">
+                <CryptoPaymentForm
+                  selectedCrypto={selectedCrypto}
+                  setSelectedCrypto={setSelectedCrypto}
+                  walletAddress={walletAddress}
+                  setWalletAddress={setWalletAddress}
                 />
-                <p className="text-sm text-gray-400">
-                  * Комиссия за оплату криптовалютой составляет 5%
-                </p>
               </TabsContent>
             </Tabs>
           </CardContent>
