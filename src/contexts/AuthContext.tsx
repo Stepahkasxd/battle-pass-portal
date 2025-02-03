@@ -20,12 +20,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session and set up session refresh
+    // Initialize auth state and set up listeners
     const initializeAuth = async () => {
       try {
         // Get current session
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
         
+        if (sessionError) {
+          console.error("Error getting session:", sessionError);
+          return;
+        }
+
         if (currentSession) {
           setSession(currentSession);
           setUser(currentSession.user);
@@ -37,30 +42,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
-    initializeAuth();
-
-    // Listen for auth changes
+    // Set up auth state change listener
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log("Auth state changed:", event);
-      
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-      setLoading(false);
 
-      // Handle token refresh errors
-      if (event === 'TOKEN_REFRESHED') {
-        console.log('Token refreshed successfully');
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        console.log('Session updated:', newSession);
       }
       
-      // Handle sign out
-      if (event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
         setSession(null);
         setUser(null);
+        // Clear any cached session data
+        await supabase.auth.signOut();
+        console.log('Session cleared');
       }
+
+      setLoading(false);
     });
 
+    // Initialize auth state
+    initializeAuth();
+
+    // Cleanup subscription on unmount
     return () => {
       subscription.unsubscribe();
     };
