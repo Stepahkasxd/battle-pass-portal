@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -14,6 +14,7 @@ const BattlePassDetails = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: battlePass, isLoading: isLoadingBattlePass } = useQuery({
     queryKey: ['battlePass', id],
@@ -45,7 +46,7 @@ const BattlePassDetails = () => {
     enabled: !!id && !!user,
   });
 
-  const { data: userRewards } = useQuery({
+  const { data: userRewards, refetch: refetchUserRewards } = useQuery({
     queryKey: ['userRewards', id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -59,7 +60,7 @@ const BattlePassDetails = () => {
     enabled: !!user,
   });
 
-  const claimReward = async (rewardId: string) => {
+  const claimReward = async (rewardId: string, rewardName: string) => {
     const { error } = await supabase
       .from('user_rewards')
       .insert([
@@ -81,7 +82,7 @@ const BattlePassDetails = () => {
     // Log the reward claim with detailed information
     await logAction(
       "reward_create",
-      "Награда получена",
+      `Получена награда: ${rewardName}`,
       {
         reward_id: rewardId,
         claimed_at: new Date().toISOString(),
@@ -93,6 +94,11 @@ const BattlePassDetails = () => {
       title: "Успех!",
       description: "Награда успешно получена",
     });
+
+    // Обновляем кэш для списка наград пользователя
+    await refetchUserRewards();
+    // Также обновляем кэш для страницы наград
+    await queryClient.invalidateQueries({ queryKey: ['userRewardsDetails'] });
   };
 
   if (isLoadingBattlePass) {
@@ -122,7 +128,6 @@ const BattlePassDetails = () => {
 
   return (
     <div className="min-h-screen bg-colizeum-dark p-4 pt-24">
-      <div className="container mx-auto max-w-6xl">
         <Link 
           to="/dashboard" 
           className="inline-flex items-center text-colizeum-cyan hover:text-colizeum-cyan/80 mb-6 transition-colors"
@@ -151,83 +156,82 @@ const BattlePassDetails = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {battlePass.rewards
-            .sort((a, b) => a.required_level - b.required_level)
-            .map((reward) => {
-              const isUnlocked = currentLevel >= reward.required_level;
-              const isClaimed = userRewards?.includes(reward.id);
-              const canClaim = isUnlocked && !isClaimed && (!reward.is_premium || isPremium);
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {battlePass.rewards
+          .sort((a, b) => a.required_level - b.required_level)
+          .map((reward) => {
+            const isUnlocked = currentLevel >= reward.required_level;
+            const isClaimed = userRewards?.includes(reward.id);
+            const canClaim = isUnlocked && !isClaimed && (!reward.is_premium || isPremium);
 
-              return (
-                <Card 
-                  key={reward.id}
-                  className={`bg-colizeum-gray border-colizeum-cyan/20 p-6 animate-fade-in transition-transform hover:scale-[1.02] flex flex-col ${
-                    !isUnlocked ? 'opacity-50' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-2 bg-colizeum-dark rounded-lg">
-                      <Gift className="w-6 h-6 text-colizeum-cyan" />
-                    </div>
-                    {reward.is_premium && (
-                      <Star className="w-5 h-5 text-colizeum-cyan" />
-                    )}
+            return (
+              <Card 
+                key={reward.id}
+                className={`bg-colizeum-gray border-colizeum-cyan/20 p-6 animate-fade-in transition-transform hover:scale-[1.02] flex flex-col ${
+                  !isUnlocked ? 'opacity-50' : ''
+                }`}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-2 bg-colizeum-dark rounded-lg">
+                    <Gift className="w-6 h-6 text-colizeum-cyan" />
                   </div>
+                  {reward.is_premium && (
+                    <Star className="w-5 h-5 text-colizeum-cyan" />
+                  )}
+                </div>
 
-                  <div className="flex-grow">
-                    <h3 className="text-lg font-semibold text-white mb-2">
-                      {reward.name}
-                    </h3>
-                    <p className="text-sm text-gray-400 mb-4">
-                      {reward.description}
-                    </p>
-                  </div>
+                <div className="flex-grow">
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    {reward.name}
+                  </h3>
+                  <p className="text-sm text-gray-400 mb-4">
+                    {reward.description}
+                  </p>
+                </div>
 
-                  <div className="mt-auto space-y-2">
-                    <div className="text-sm text-gray-400">
-                      Требуемый уровень: {reward.required_level}
-                    </div>
-                    
-                    {!isUnlocked ? (
-                      <Button 
-                        variant="outline" 
-                        className="w-full" 
-                        disabled
-                      >
-                        <Lock className="w-4 h-4 mr-2" />
-                        Заблокировано
-                      </Button>
-                    ) : isClaimed ? (
-                      <Button 
-                        variant="outline" 
-                        className="w-full bg-colizeum-cyan/10" 
-                        disabled
-                      >
-                        Получено
-                      </Button>
-                    ) : reward.is_premium && !isPremium ? (
-                      <Button 
-                        variant="outline" 
-                        className="w-full" 
-                        disabled
-                      >
-                        <Star className="w-4 h-4 mr-2" />
-                        Требуется премиум
-                      </Button>
-                    ) : (
-                      <Button 
-                        className="w-full bg-colizeum-cyan hover:bg-colizeum-cyan/80 text-colizeum-dark"
-                        onClick={() => claimReward(reward.id)}
-                      >
-                        Получить награду
-                      </Button>
-                    )}
+                <div className="mt-auto space-y-2">
+                  <div className="text-sm text-gray-400">
+                    Требуемый уровень: {reward.required_level}
                   </div>
-                </Card>
-              );
-            })}
-        </div>
+                  
+                  {!isUnlocked ? (
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      disabled
+                    >
+                      <Lock className="w-4 h-4 mr-2" />
+                      Заблокировано
+                    </Button>
+                  ) : isClaimed ? (
+                    <Button 
+                      variant="outline" 
+                      className="w-full bg-colizeum-cyan/10" 
+                      disabled
+                    >
+                      Получено
+                    </Button>
+                  ) : reward.is_premium && !isPremium ? (
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      disabled
+                    >
+                      <Star className="w-4 h-4 mr-2" />
+                      Требуется премиум
+                    </Button>
+                  ) : (
+                    <Button 
+                      className="w-full bg-colizeum-cyan hover:bg-colizeum-cyan/80 text-colizeum-dark"
+                      onClick={() => claimReward(reward.id, reward.name)}
+                    >
+                      Получить награду
+                    </Button>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
       </div>
     </div>
   );
