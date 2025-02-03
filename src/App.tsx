@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import GuestDashboard from "./pages/GuestDashboard";
 import NotFound from "./pages/NotFound";
 import AdminPanel from "./pages/AdminPanel";
+import BattlePassDetails from "./pages/BattlePassDetails";
 
 const queryClient = new QueryClient();
 
@@ -49,6 +50,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <AdminPanel />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/battle-pass/:id"
+              element={
+                <ProtectedRoute>
+                  <BattlePassDetails />
                 </ProtectedRoute>
               }
             />
