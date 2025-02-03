@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Trophy, Plus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { logAction } from "@/lib/logger";
 
 interface UserDetailsDialogProps {
   userId: string | null;
@@ -100,7 +102,7 @@ export const UserDetailsDialog = ({ userId, isOpen, onClose }: UserDetailsDialog
     }
   };
 
-  const handleUpdateBattlePass = async (battlePassId: string, field: 'current_level' | 'current_xp', value: number) => {
+  const handleUpdateBattlePass = async (battlePassId: string, field: 'current_level' | 'current_xp' | 'is_premium', value: number | boolean) => {
     const { error } = await supabase
       .from('user_battle_passes')
       .update({ [field]: value })
@@ -116,8 +118,20 @@ export const UserDetailsDialog = ({ userId, isOpen, onClose }: UserDetailsDialog
     } else {
       toast({
         title: "Успешно",
-        description: "Прогресс обновлен",
+        description: field === 'is_premium' 
+          ? `Премиум статус ${value ? 'включен' : 'выключен'}`
+          : "Прогресс обновлен",
       });
+
+      if (field === 'is_premium') {
+        await logAction(
+          "battle_pass_update",
+          `${value ? 'Включен' : 'Выключен'} премиум статус для пользователя ${user?.username}`,
+          { battle_pass_id: battlePassId, user_id: userId },
+          userId
+        );
+      }
+
       refetchUserBattlePasses();
     }
   };
@@ -188,7 +202,12 @@ export const UserDetailsDialog = ({ userId, isOpen, onClose }: UserDetailsDialog
                         />
                       </div>
                     </TableCell>
-                    <TableCell>{pass.is_premium ? "Да" : "Нет"}</TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={pass.is_premium}
+                        onCheckedChange={(checked) => handleUpdateBattlePass(pass.battle_pass_id, 'is_premium', checked)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Trophy className="w-5 h-5 text-colizeum-cyan" />
                     </TableCell>
