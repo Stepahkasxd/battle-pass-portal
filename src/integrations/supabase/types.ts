@@ -326,27 +326,27 @@ export type Database = {
       user_purchases: {
         Row: {
           id: string
-          user_id: string | null
           item_id: string | null
           price_paid: number
           purchased_at: string
           received: boolean | null
+          user_id: string | null
         }
         Insert: {
           id?: string
-          user_id?: string | null
           item_id?: string | null
           price_paid: number
           purchased_at?: string
           received?: boolean | null
+          user_id?: string | null
         }
         Update: {
           id?: string
-          user_id?: string | null
           item_id?: string | null
           price_paid?: number
           purchased_at?: string
           received?: boolean | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -362,7 +362,36 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
+          },
+        ]
+      }
+      user_rewards: {
+        Row: {
+          claimed_at: string
+          id: string
+          reward_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          claimed_at?: string
+          id?: string
+          reward_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          claimed_at?: string
+          id?: string
+          reward_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_rewards_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
