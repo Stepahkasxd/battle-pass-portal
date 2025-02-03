@@ -2,8 +2,33 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, Star, Target, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { BattlePassCard } from "@/components/BattlePassCard";
 
 const GuestDashboard = () => {
+  const { data: userBattlePasses } = useQuery({
+    queryKey: ['userBattlePasses'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      
+      const { data, error } = await supabase
+        .from('user_battle_passes')
+        .select(`
+          *,
+          battle_passes (
+            name,
+            description
+          )
+        `)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const features = [
     {
       icon: <Trophy className="h-12 w-12 text-colizeum-cyan" />,
@@ -39,6 +64,21 @@ const GuestDashboard = () => {
             </Button>
           </Link>
         </div>
+
+        {userBattlePasses && userBattlePasses.length > 0 ? (
+          <div className="grid gap-6 mb-12">
+            <h2 className="text-2xl font-bold text-white">Ваши боевые пропуски</h2>
+            {userBattlePasses.map((ubp) => (
+              <BattlePassCard
+                key={ubp.id}
+                level={ubp.current_level}
+                currentXP={ubp.current_xp}
+                requiredXP={1000} // This should be calculated based on level
+                isPremium={ubp.is_premium}
+              />
+            ))}
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {features.map((feature, index) => (

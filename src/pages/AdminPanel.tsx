@@ -17,7 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Users, Activity, Gift, Trophy, Plus } from "lucide-react";
 import { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { UserBattlePassesManager } from "@/components/admin/UserBattlePassesManager";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -68,20 +69,6 @@ const AdminPanel = () => {
       if (error) throw error;
       return data;
     },
-  });
-
-  const { data: rewards, isLoading: loadingRewards } = useQuery({
-    queryKey: ['rewards', selectedBattlePass],
-    queryFn: async () => {
-      if (!selectedBattlePass) return [];
-      const { data, error } = await supabase
-        .from('rewards')
-        .select('*')
-        .eq('battle_pass_id', selectedBattlePass);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedBattlePass,
   });
 
   const { data: logs } = useQuery({
@@ -197,6 +184,10 @@ const AdminPanel = () => {
             <TabsTrigger value="rewards" className="flex items-center gap-2">
               <Gift className="w-4 h-4" />
               Награды
+            </TabsTrigger>
+            <TabsTrigger value="user-battle-passes" className="flex items-center gap-2">
+              <Trophy className="w-4 h-4" />
+              Пропуски пользователей
             </TabsTrigger>
           </TabsList>
 
@@ -342,109 +333,95 @@ const AdminPanel = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Выберите боевой пропуск</h3>
-                  <select
-                    className="w-full p-2 rounded-md bg-colizeum-gray text-white border border-colizeum-cyan/20"
-                    value={selectedBattlePass || ''}
-                    onChange={(e) => setSelectedBattlePass(e.target.value || null)}
-                  >
-                    <option value="">Выберите боевой пропуск</option>
-                    {battlePasses?.map((pass) => (
-                      <option key={pass.id} value={pass.id}>{pass.name}</option>
-                    ))}
-                  </select>
+                  <h3 className="text-lg font-semibold">Выдать награду</h3>
+                  <div className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="rewardName">Название награды</Label>
+                      <Input
+                        id="rewardName"
+                        value={newReward.name}
+                        onChange={(e) => setNewReward(prev => ({ ...prev, name: e.target.value }))}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="rewardDescription">Описание награды</Label>
+                      <Input
+                        id="rewardDescription"
+                        value={newReward.description}
+                        onChange={(e) => setNewReward(prev => ({ ...prev, description: e.target.value }))}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="requiredLevel">Требуемый уровень</Label>
+                      <Input
+                        id="requiredLevel"
+                        type="number"
+                        min="1"
+                        value={newReward.requiredLevel}
+                        onChange={(e) => setNewReward(prev => ({ ...prev, requiredLevel: parseInt(e.target.value) }))}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="rewardType">Тип награды</Label>
+                      <select
+                        id="rewardType"
+                        className="w-full p-2 rounded-md bg-colizeum-gray text-white border border-colizeum-cyan/20"
+                        value={newReward.rewardType}
+                        onChange={(e) => setNewReward(prev => ({ ...prev, rewardType: e.target.value as "item" | "bonus" | "discount" }))}
+                      >
+                        <option value="item">Предмет</option>
+                        <option value="bonus">Бонус</option>
+                        <option value="discount">Скидка</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="isPremium"
+                        checked={newReward.isPremium}
+                        onChange={(e) => setNewReward(prev => ({ ...prev, isPremium: e.target.checked }))}
+                        className="w-4 h-4"
+                      />
+                      <Label htmlFor="isPremium">Премиум награда</Label>
+                    </div>
+                    <Button onClick={handleCreateReward} className="w-full">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Добавить награду
+                    </Button>
+                  </div>
                 </div>
 
-                {selectedBattlePass && (
-                  <>
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Добавить награду</h3>
-                      <div className="grid gap-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="rewardName">Название награды</Label>
-                          <Input
-                            id="rewardName"
-                            value={newReward.name}
-                            onChange={(e) => setNewReward(prev => ({ ...prev, name: e.target.value }))}
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="rewardDescription">Описание награды</Label>
-                          <Input
-                            id="rewardDescription"
-                            value={newReward.description}
-                            onChange={(e) => setNewReward(prev => ({ ...prev, description: e.target.value }))}
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="requiredLevel">Требуемый уровень</Label>
-                          <Input
-                            id="requiredLevel"
-                            type="number"
-                            min="1"
-                            value={newReward.requiredLevel}
-                            onChange={(e) => setNewReward(prev => ({ ...prev, requiredLevel: parseInt(e.target.value) }))}
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="rewardType">Тип награды</Label>
-                          <select
-                            id="rewardType"
-                            className="w-full p-2 rounded-md bg-colizeum-gray text-white border border-colizeum-cyan/20"
-                            value={newReward.rewardType}
-                            onChange={(e) => setNewReward(prev => ({ ...prev, rewardType: e.target.value as "item" | "bonus" | "discount" }))}
-                          >
-                            <option value="item">Предмет</option>
-                            <option value="bonus">Бонус</option>
-                            <option value="discount">Скидка</option>
-                          </select>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id="isPremium"
-                            checked={newReward.isPremium}
-                            onChange={(e) => setNewReward(prev => ({ ...prev, isPremium: e.target.checked }))}
-                            className="w-4 h-4"
-                          />
-                          <Label htmlFor="isPremium">Премиум награда</Label>
-                        </div>
-                        <Button onClick={handleCreateReward} className="w-full">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Добавить награду
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Существующие награды</h3>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Название</TableHead>
-                            <TableHead>Описание</TableHead>
-                            <TableHead>Уровень</TableHead>
-                            <TableHead>Тип</TableHead>
-                            <TableHead>Премиум</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {rewards?.map((reward) => (
-                            <TableRow key={reward.id}>
-                              <TableCell>{reward.name}</TableCell>
-                              <TableCell>{reward.description}</TableCell>
-                              <TableCell>{reward.required_level}</TableCell>
-                              <TableCell>{reward.reward_type}</TableCell>
-                              <TableCell>{reward.is_premium ? "Да" : "Нет"}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </>
-                )}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Существующие награды</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Название</TableHead>
+                        <TableHead>Описание</TableHead>
+                        <TableHead>Уровень</TableHead>
+                        <TableHead>Тип</TableHead>
+                        <TableHead>Премиум</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rewards?.map((reward) => (
+                        <TableRow key={reward.id}>
+                          <TableCell>{reward.name}</TableCell>
+                          <TableCell>{reward.description}</TableCell>
+                          <TableCell>{reward.required_level}</TableCell>
+                          <TableCell>{reward.reward_type}</TableCell>
+                          <TableCell>{reward.is_premium ? "Да" : "Нет"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="user-battle-passes">
+            <UserBattlePassesManager />
           </TabsContent>
         </Tabs>
       </div>
