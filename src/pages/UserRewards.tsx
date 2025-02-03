@@ -46,8 +46,8 @@ const UserRewards = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userRewards'] });
-      queryClient.invalidateQueries({ queryKey: ['userRewardsDetails'] });
+      // Обновляем кэш для списка наград
+      queryClient.invalidateQueries({ queryKey: ['userRewardsDetails', user?.id] });
       toast({
         title: "Успех!",
         description: "Награда отмечена как полученная",
