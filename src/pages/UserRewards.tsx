@@ -74,71 +74,47 @@ const UserRewards = () => {
   });
 
   const deletePurchase = useMutation({
-    mutationFn: async (purchaseId: string) => {
-      const { error } = await supabase
-        .from('user_purchases')
-        .delete()
-        .eq('id', purchaseId)
-        .eq('user_id', user?.id);
-
-      if (error) throw error;
-      
-      await logAction('item_purchase', 'Удаление покупки');
-      return purchaseId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userRewardsDetails', user?.id] });
-      toast({
-        title: "Успех!",
-        description: "Покупка удалена",
-      });
-    },
-    onError: (error) => {
-      console.error('Delete error:', error);
-      toast({
-        title: "Ошибка",
-        description: "Не удалось удалить покупку",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const markAsReceived = useMutation({
     mutationFn: async (reward: any) => {
       if (reward.type === 'shop') {
         const { error } = await supabase
           .from('user_purchases')
-          .update({ received: true })
+          .delete()
+          .eq('id', reward.id)
+          .eq('user_id', user?.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_rewards')
+          .delete()
           .eq('id', reward.id)
           .eq('user_id', user?.id);
 
         if (error) throw error;
       }
       
-      await logAction('reward_claimed', `Получена награда: ${reward.name}`);
+      await logAction('reward_claimed', `Удалена награда: ${reward.name}`);
       return reward;
     },
-    onSuccess: () => {
+    onSuccess: (reward) => {
       queryClient.invalidateQueries({ queryKey: ['userRewardsDetails', user?.id] });
       toast({
         title: "Успех!",
-        description: "Статус награды обновлен",
+        description: `Награда "${reward.name}" удалена`,
       });
     },
     onError: (error) => {
-      console.error('Mark as received error:', error);
+      console.error('Delete error:', error);
       toast({
         title: "Ошибка",
-        description: "Не удалось обновить статус награды",
+        description: "Не удалось удалить награду",
         variant: "destructive",
       });
     },
   });
 
   const handleDelete = (reward: any) => {
-    if (reward.type === 'shop') {
-      deletePurchase.mutate(reward.id);
-    }
+    deletePurchase.mutate(reward);
   };
 
   if (isLoading) {
@@ -199,26 +175,14 @@ const UserRewards = () => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        {reward.type === 'shop' && (
-                          <>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleDelete(reward)}
-                              className="bg-red-500/10 hover:bg-red-500/20 text-red-500"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="bg-colizeum-cyan/10 hover:bg-colizeum-cyan/20 border-colizeum-cyan/20"
-                              onClick={() => markAsReceived.mutate(reward)}
-                              disabled={reward.received}
-                            >
-                              {reward.received ? 'Получено' : 'Получить'}
-                            </Button>
-                          </>
-                        )}
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(reward)}
+                          className="bg-red-500/10 hover:bg-red-500/20 text-red-500"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   </CardHeader>
