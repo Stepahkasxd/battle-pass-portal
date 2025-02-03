@@ -17,11 +17,25 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Users, Activity, Trophy, Gift, Plus } from "lucide-react";
 import { UserPointsManager } from "@/components/admin/UserPointsManager";
+import { UserBattlePassesManager } from "@/components/admin/UserBattlePassesManager";
 
 const AdminPanel = () => {
   const { toast } = useToast();
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [selectedBattlePass, setSelectedBattlePass] = useState<string | null>(null);
+  const [newBattlePass, setNewBattlePass] = useState({
+    name: "",
+    description: "",
+    startDate: "",
+    endDate: "",
+  });
+  const [newReward, setNewReward] = useState({
+    name: "",
+    description: "",
+    requiredLevel: 1,
+    rewardType: "item" as "item" | "bonus" | "discount",
+    isPremium: false,
+  });
 
   const { data: users, refetch: refetchUsers } = useQuery({
     queryKey: ['adminUsers'],
@@ -45,20 +59,15 @@ const AdminPanel = () => {
     },
   });
 
-  const { data: userBattlePasses, refetch: refetchUserBattlePasses } = useQuery({
-    queryKey: ['userBattlePasses'],
+  const { data: logs } = useQuery({
+    queryKey: ['actionLogs'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('user_battle_passes')
+        .from('action_logs')
         .select(`
           *,
-          profiles!user_battle_passes_user_id_fkey (
-            username,
-            numeric_id
-          ),
-          battle_passes!user_battle_passes_battle_pass_id_fkey (
-            name,
-            description
+          profiles (
+            username
           )
         `);
       if (error) throw error;
@@ -66,40 +75,76 @@ const AdminPanel = () => {
     },
   });
 
-  const handleAssignBattlePass = async () => {
-    if (!selectedUser || !selectedBattlePass) {
-      toast({
-        title: "Ошибка",
-        description: "Выберите пользователя и боевой пропуск",
-        variant: "destructive",
-      });
-      return;
-    }
+  const { data: rewards } = useQuery({
+    queryKey: ['rewards'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rewards')
+        .select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
 
+  const handleCreateBattlePass = async () => {
     const { error } = await supabase
-      .from('user_battle_passes')
+      .from('battle_passes')
       .insert([{
-        user_id: selectedUser,
-        battle_pass_id: selectedBattlePass,
-        current_level: 1,
-        current_xp: 0,
-        is_premium: false,
+        name: newBattlePass.name,
+        description: newBattlePass.description,
+        start_date: newBattlePass.startDate,
+        end_date: newBattlePass.endDate,
       }]);
 
     if (error) {
       toast({
         title: "Ошибка",
-        description: "Не удалось выдать боевой пропуск",
+        description: "Не удалось создать боевой пропуск",
         variant: "destructive",
       });
     } else {
       toast({
         title: "Успешно",
-        description: "Боевой пропуск выдан",
+        description: "Боевой пропуск создан",
       });
-      refetchUserBattlePasses();
-      setSelectedUser(null);
-      setSelectedBattlePass(null);
+      setNewBattlePass({
+        name: "",
+        description: "",
+        startDate: "",
+        endDate: "",
+      });
+    }
+  };
+
+  const handleCreateReward = async () => {
+    const { error } = await supabase
+      .from('rewards')
+      .insert([{
+        name: newReward.name,
+        description: newReward.description,
+        reward_type: newReward.rewardType,
+        required_level: newReward.requiredLevel,
+        is_premium: newReward.isPremium,
+      }]);
+
+    if (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось создать награду",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Успешно",
+        description: "Награда создана",
+      });
+      setNewReward({
+        name: "",
+        description: "",
+        requiredLevel: 1,
+        rewardType: "item",
+        isPremium: false,
+      });
     }
   };
 
@@ -135,43 +180,7 @@ const AdminPanel = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Выдать боевой пропуск</h3>
-                    <div className="grid gap-4">
-                      <div className="grid gap-2">
-                        <Label>Выберите пользователя</Label>
-                        <select
-                          className="w-full p-2 rounded-md bg-colizeum-gray text-white border border-colizeum-cyan/20"
-                          value={selectedUser || ''}
-                          onChange={(e) => setSelectedUser(e.target.value || null)}
-                        >
-                          <option value="">Выберите пользователя</option>
-                          {users?.map((user) => (
-                            <option key={user.id} value={user.id}>
-                              {user.username} (ID: {user.numeric_id})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="grid gap-2">
-                        <Label>Выберите боевой пропуск</Label>
-                        <select
-                          className="w-full p-2 rounded-md bg-colizeum-gray text-white border border-colizeum-cyan/20"
-                          value={selectedBattlePass || ''}
-                          onChange={(e) => setSelectedBattlePass(e.target.value || null)}
-                        >
-                          <option value="">Выберите боевой пропуск</option>
-                          {battlePasses?.map((pass) => (
-                            <option key={pass.id} value={pass.id}>{pass.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <Button onClick={handleAssignBattlePass} className="w-full">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Выдать боевой пропуск
-                      </Button>
-                    </div>
-                  </div>
+                  <UserBattlePassesManager />
 
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Список пользователей</h3>
@@ -197,34 +206,6 @@ const AdminPanel = () => {
                                 onUpdate={refetchUsers}
                               />
                             </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Активные боевые пропуски</h3>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Пользователь</TableHead>
-                          <TableHead>ID пользователя</TableHead>
-                          <TableHead>Боевой пропуск</TableHead>
-                          <TableHead>Уровень</TableHead>
-                          <TableHead>Опыт</TableHead>
-                          <TableHead>Премиум</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {userBattlePasses?.map((ubp) => (
-                          <TableRow key={ubp.id}>
-                            <TableCell>{ubp.profiles?.username}</TableCell>
-                            <TableCell>{ubp.profiles?.numeric_id}</TableCell>
-                            <TableCell>{ubp.battle_passes?.name}</TableCell>
-                            <TableCell>{ubp.current_level}</TableCell>
-                            <TableCell>{ubp.current_xp}</TableCell>
-                            <TableCell>{ubp.is_premium ? "Да" : "Нет"}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -349,7 +330,7 @@ const AdminPanel = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Выдать награду</h3>
+                  <h3 className="text-lg font-semibold">Создать награду</h3>
                   <div className="grid gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="rewardName">Название награды</Label>
