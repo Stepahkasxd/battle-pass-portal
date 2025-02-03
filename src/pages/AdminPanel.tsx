@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Activity } from "lucide-react";
+import { Users, Activity, Trophy } from "lucide-react";
 import { UsersTable } from "@/components/admin/UsersTable";
 import { UserDetailsDialog } from "@/components/admin/UserDetailsDialog";
+import { BattlePassManager } from "@/components/admin/BattlePassManager";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const AdminPanel = () => {
@@ -49,6 +50,10 @@ const AdminPanel = () => {
               <Users className="w-4 h-4" />
               Пользователи
             </TabsTrigger>
+            <TabsTrigger value="battle-pass" className="flex items-center gap-2">
+              <Trophy className="w-4 h-4" />
+              Боевой пропуск
+            </TabsTrigger>
             <TabsTrigger value="logs" className="flex items-center gap-2">
               <Activity className="w-4 h-4" />
               Логи
@@ -68,6 +73,10 @@ const AdminPanel = () => {
                 />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="battle-pass">
+            <BattlePassManager />
           </TabsContent>
 
           <TabsContent value="logs">
