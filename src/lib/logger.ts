@@ -6,12 +6,14 @@ type ActionType = Database["public"]["Enums"]["action_type"];
 export const logAction = async (
   actionType: ActionType,
   description: string,
-  metadata: Record<string, any> = {}
+  metadata: Record<string, any> = {},
+  userId?: string
 ) => {
   const { error } = await supabase.from("action_logs").insert({
     action_type: actionType,
     description,
     metadata,
+    user_id: userId,
   });
 
   if (error) {

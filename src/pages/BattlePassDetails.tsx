@@ -77,6 +77,17 @@ const BattlePassDetails = () => {
       return;
     }
 
+    // Log the reward claim with detailed information
+    await logAction(
+      "reward_create",
+      "Награда получена",
+      {
+        reward_id: rewardId,
+        claimed_at: new Date().toISOString(),
+      },
+      user?.id
+    );
+
     toast({
       title: "Успех!",
       description: "Награда успешно получена",

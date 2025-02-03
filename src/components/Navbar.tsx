@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Trophy, User, ShoppingCart, Shield } from "lucide-react";
+import { Trophy, User, ShoppingCart, Shield, Gift } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +20,18 @@ export const Navbar = () => {
     enabled: !!user,
   });
 
+  const { data: rewardsCount } = useQuery({
+    queryKey: ['userRewardsCount', user?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('user_rewards')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id);
+      return count || 0;
+    },
+    enabled: !!user,
+  });
+
   return (
     <nav className="fixed top-0 w-full bg-colizeum-dark/95 backdrop-blur-sm border-b border-colizeum-gray z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -29,14 +41,14 @@ export const Navbar = () => {
         
         <div className="flex items-center space-x-4">
           <Link to="/battlepass">
-            <Button variant="ghost" className="text-white hover:text-colizeum-cyan">
+            <Button variant="ghost" className="text-gray-400 hover:text-colizeum-cyan">
               <Trophy className="w-5 h-5 mr-2" />
               Боевой Пропуск
             </Button>
           </Link>
           
           <Link to="/shop">
-            <Button variant="ghost" className="text-white hover:text-colizeum-cyan">
+            <Button variant="ghost" className="text-gray-400 hover:text-colizeum-cyan">
               <ShoppingCart className="w-5 h-5 mr-2" />
               Магазин
             </Button>
@@ -44,15 +56,26 @@ export const Navbar = () => {
           
           {user ? (
             <>
+              <Link to="/rewards">
+                <Button variant="ghost" className="text-gray-400 hover:text-colizeum-cyan relative">
+                  <Gift className="w-5 h-5 mr-2" />
+                  Мои Награды
+                  {rewardsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-colizeum-cyan text-colizeum-dark text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-bounce">
+                      {rewardsCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
               <Link to="/dashboard">
-                <Button variant="ghost" className="text-white hover:text-colizeum-cyan">
+                <Button variant="ghost" className="text-gray-400 hover:text-colizeum-cyan">
                   <User className="w-5 h-5 mr-2" />
                   Профиль
                 </Button>
               </Link>
               {isAdmin && (
                 <Link to="/admin">
-                  <Button variant="ghost" className="text-white hover:text-colizeum-cyan">
+                  <Button variant="ghost" className="text-gray-400 hover:text-colizeum-cyan">
                     <Shield className="w-5 h-5 mr-2" />
                     Админ
                   </Button>
@@ -61,7 +84,7 @@ export const Navbar = () => {
             </>
           ) : (
             <Link to="/auth">
-              <Button variant="ghost" className="text-white hover:text-colizeum-cyan">
+              <Button variant="ghost" className="text-gray-400 hover:text-colizeum-cyan">
                 <User className="w-5 h-5 mr-2" />
                 Войти
               </Button>
