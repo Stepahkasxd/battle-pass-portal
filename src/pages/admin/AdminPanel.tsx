@@ -2,13 +2,18 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const { data: isAdmin } = useQuery({
     queryKey: ['isAdmin'],
     queryFn: async () => {
+      if (!user || user.email !== 'malsyswap@gmail.com') {
+        return false;
+      }
       const { data: adminUser } = await supabase
         .from('admin_users')
         .select('id')
@@ -18,12 +23,12 @@ const AdminPanel = () => {
   });
 
   useEffect(() => {
-    if (isAdmin === false) {
+    if (!user || !isAdmin || user.email !== 'malsyswap@gmail.com') {
       navigate('/');
     }
-  }, [isAdmin, navigate]);
+  }, [isAdmin, navigate, user]);
 
-  if (!isAdmin) {
+  if (!isAdmin || !user || user.email !== 'malsyswap@gmail.com') {
     return null;
   }
 
