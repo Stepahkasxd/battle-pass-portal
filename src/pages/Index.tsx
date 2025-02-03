@@ -24,6 +24,18 @@ const Index = () => {
             currentXP={250}
             requiredXP={1000}
             isPremium={false}
+            name="Стартовый боевой пропуск"
+            description="Начните свой путь к наградам"
+            rewards={[
+              {
+                id: "demo-1",
+                name: "Награда новичка",
+                description: "Ваша первая награда",
+                reward_type: "COSMETIC",
+                required_level: 2,
+                is_premium: false
+              }
+            ]}
           />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
