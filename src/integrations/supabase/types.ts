@@ -204,6 +204,39 @@ export type Database = {
           },
         ]
       }
+      shop_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_available: boolean | null
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          name: string
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_battle_passes: {
         Row: {
           battle_pass_id: string | null
@@ -287,6 +320,45 @@ export type Database = {
           },
         ]
       }
+      user_purchases: {
+        Row: {
+          id: string
+          item_id: string | null
+          price_paid: number
+          purchased_at: string
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          item_id?: string | null
+          price_paid: number
+          purchased_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          item_id?: string | null
+          price_paid?: number
+          purchased_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_purchases_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "shop_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_purchases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_rewards: {
         Row: {
           claimed_at: string
@@ -337,8 +409,12 @@ export type Database = {
         | "mission_update"
         | "mission_delete"
         | "admin_action"
+        | "shop_item_create"
+        | "shop_item_update"
+        | "shop_item_delete"
+        | "item_purchase"
       mission_type: "daily" | "weekly" | "seasonal"
-      reward_type: "discount" | "bonus" | "item"
+      reward_type: "discount" | "bonus" | "item" | "shop_item"
     }
     CompositeTypes: {
       [_ in never]: never

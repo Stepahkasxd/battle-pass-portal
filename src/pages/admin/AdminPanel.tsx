@@ -5,10 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Activity, Trophy } from "lucide-react";
+import { Users, Activity, Trophy, ShoppingBag } from "lucide-react";
 import { UsersTable } from "@/components/admin/UsersTable";
 import { UserDetailsDialog } from "@/components/admin/UserDetailsDialog";
 import { BattlePassManager } from "@/components/admin/BattlePassManager";
+import { ShopManager } from "@/components/admin/ShopManager";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useState } from "react";
 
@@ -83,6 +84,10 @@ const AdminPanel = () => {
               <Trophy className="w-4 h-4" />
               Боевой пропуск
             </TabsTrigger>
+            <TabsTrigger value="shop" className="flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4" />
+              Магазин
+            </TabsTrigger>
             <TabsTrigger value="logs" className="flex items-center gap-2">
               <Activity className="w-4 h-4" />
               Логи
@@ -106,6 +111,14 @@ const AdminPanel = () => {
 
           <TabsContent value="battle-pass">
             <BattlePassManager />
+          </TabsContent>
+
+          <TabsContent value="shop">
+            <Card>
+              <CardContent>
+                <ShopManager />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="logs">
