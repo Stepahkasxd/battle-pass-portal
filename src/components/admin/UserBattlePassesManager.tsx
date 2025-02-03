@@ -48,13 +48,13 @@ export const UserBattlePassesManager = () => {
         .from('user_battle_passes')
         .select(`
           *,
-          battle_passes (
-            name,
-            description
-          ),
-          profiles (
+          profiles:user_id (
             username,
             numeric_id
+          ),
+          battle_passes:battle_pass_id (
+            name,
+            description
           )
         `);
       if (error) throw error;

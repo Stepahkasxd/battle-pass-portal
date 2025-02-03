@@ -30,11 +30,17 @@ const AdminPanel = () => {
     endDate: "",
   });
   const [selectedBattlePass, setSelectedBattlePass] = useState<string | null>(null);
-  const [newReward, setNewReward] = useState({
+  const [newReward, setNewReward] = useState<{
+    name: string;
+    description: string;
+    requiredLevel: number;
+    rewardType: "item" | "bonus" | "discount";
+    isPremium: boolean;
+  }>({
     name: "",
     description: "",
     requiredLevel: 1,
-    rewardType: "item" as const,
+    rewardType: "item",
     isPremium: false,
   });
   
@@ -83,6 +89,17 @@ const AdminPanel = () => {
           )
         `)
         .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: rewards } = useQuery({
+    queryKey: ['rewards'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rewards')
+        .select('*');
       if (error) throw error;
       return data;
     },
