@@ -3,10 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { BattlePassCard } from "@/components/BattlePassCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Trophy, Star, Gift } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Trophy, Star, Gift, ShoppingCart } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
   const { data: battlePasses, isLoading } = useQuery({
     queryKey: ['publicBattlePasses'],
     queryFn: async () => {
@@ -30,6 +36,18 @@ const Index = () => {
       return data;
     },
   });
+
+  const handlePurchase = () => {
+    if (!user) {
+      toast({
+        title: "Требуется авторизация",
+        description: "Для покупки премиум пропуска необходимо войти в аккаунт",
+      });
+      navigate("/auth");
+      return;
+    }
+    navigate("/pay");
+  };
 
   if (isLoading) {
     return (
@@ -83,10 +101,22 @@ const Index = () => {
 
           {premiumBattlePass && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-semibold flex items-center gap-2">
-                Премиум Боевой Пропуск
-                <Star className="w-5 h-5 text-colizeum-cyan" />
-              </h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold flex items-center gap-2">
+                  Премиум Боевой Пропуск
+                  <Star className="w-5 h-5 text-colizeum-cyan" />
+                </h2>
+                <div className="flex items-center gap-4">
+                  <span className="text-xl font-bold text-colizeum-cyan">499 ₽</span>
+                  <Button
+                    onClick={handlePurchase}
+                    className="bg-gradient-to-r from-colizeum-red to-colizeum-cyan hover:opacity-90 transition-opacity"
+                  >
+                    <ShoppingCart className="w-5 h-5 mr-2" />
+                    Купить
+                  </Button>
+                </div>
+              </div>
               <BattlePassCard
                 level={1}
                 currentXP={0}
