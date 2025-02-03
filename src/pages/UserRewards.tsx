@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Gift, Award, ShoppingBag } from "lucide-react";
+import { Gift, Award, ShoppingBag, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { logAction } from "@/lib/logger";
@@ -40,7 +40,8 @@ const UserRewards = () => {
           shop_items (
             name,
             description,
-            image_url
+            image_url,
+            price
           )
         `)
         .eq('user_id', user?.id);
@@ -61,6 +62,7 @@ const UserRewards = () => {
           name: p.shop_items?.name,
           description: p.shop_items?.description,
           image_url: p.shop_items?.image_url,
+          price: p.shop_items?.price,
           claimed_at: p.purchased_at,
         })),
       ];
@@ -70,50 +72,41 @@ const UserRewards = () => {
     enabled: !!user,
   });
 
-  const markAsReceived = useMutation({
-    mutationFn: async (reward: any) => {
-      if (reward.type === 'shop') {
-        // Для покупок из магазина
-        const { error } = await supabase
-          .from('user_purchases')
-          .delete()
-          .eq('id', reward.id)
-          .eq('user_id', user?.id);
+  const deletePurchase = useMutation({
+    mutationFn: async (purchaseId: string) => {
+      const { error } = await supabase
+        .from('user_purchases')
+        .delete()
+        .eq('id', purchaseId)
+        .eq('user_id', user?.id);
 
-        if (error) throw error;
-        
-        await logAction('reward_claimed', `Получена награда из магазина: ${reward.name}`);
-      } else {
-        // Для наград из боевого пропуска
-        const { error } = await supabase
-          .from('user_rewards')
-          .delete()
-          .eq('id', reward.id)
-          .eq('user_id', user?.id);
-
-        if (error) throw error;
-        
-        await logAction('reward_claimed', `Получена награда из боевого пропуска: ${reward.name}`);
-      }
-      return reward.id;
-    },
-    onSuccess: (rewardId) => {
-      queryClient.invalidateQueries({ queryKey: ['userRewardsDetails', user?.id] });
+      if (error) throw error;
       
+      await logAction('item_purchase', 'Удаление покупки');
+      return purchaseId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userRewardsDetails', user?.id] });
       toast({
         title: "Успех!",
-        description: "Награда отмечена как полученная",
+        description: "Покупка удалена",
       });
     },
     onError: (error) => {
-      console.error('Mutation error:', error);
+      console.error('Delete error:', error);
       toast({
         title: "Ошибка",
-        description: "Не удалось отметить награду как полученную",
+        description: "Не удалось удалить покупку",
         variant: "destructive",
       });
     },
   });
+
+  const handleDelete = (reward: any) => {
+    if (reward.type === 'shop') {
+      deletePurchase.mutate(reward.id);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -161,19 +154,36 @@ const UserRewards = () => {
                         <div>
                           <CardTitle className="text-white text-lg">
                             {reward.name}
+                            {reward.type === 'shop' && reward.price && (
+                              <span className="ml-2 text-sm text-colizeum-cyan">
+                                {reward.price} очков
+                              </span>
+                            )}
                           </CardTitle>
                           <p className="text-sm text-gray-400">
                             {reward.description}
                           </p>
                         </div>
                       </div>
-                      <Button
-                        variant="outline"
-                        className="bg-colizeum-cyan/10 hover:bg-colizeum-cyan/20 border-colizeum-cyan/20"
-                        onClick={() => markAsReceived.mutate(reward)}
-                      >
-                        Получил
-                      </Button>
+                      <div className="flex items-center space-x-2">
+                        {reward.type === 'shop' && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete(reward)}
+                            className="bg-red-500/10 hover:bg-red-500/20 text-red-500"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          className="bg-colizeum-cyan/10 hover:bg-colizeum-cyan/20 border-colizeum-cyan/20"
+                          onClick={() => markAsReceived.mutate(reward)}
+                        >
+                          Получил
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
