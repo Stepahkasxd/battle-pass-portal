@@ -7,10 +7,17 @@ import { Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
+interface BattlePass {
+  id: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 const Index = () => {
   const { user } = useAuth();
 
-  const { data: battlePass, isLoading } = useQuery({
+  const { data: battlePass, isLoading } = useQuery<BattlePass>({
     queryKey: ['currentBattlePass'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -40,7 +47,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-colizeum-dark p-4 pt-24">
       <div className="container mx-auto max-w-4xl">
-        <Card className="bg-colizeum 3-gray border-colizeum-cyan/20">
+        <Card className="bg-colizeum-gray border-colizeum-cyan/20">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Trophy className="w-6 h-6 text-colizeum-cyan" />
